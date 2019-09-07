@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.2.2
- * Release date: 19/12/2018 (built at 18/12/2018 14:40:17)
+ * Release date: 19/12/2018 (built at 07/09/2019 14:37:44)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -29734,7 +29734,7 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "18/12/2018 14:40:17";
+Handsontable.buildDate = "07/09/2019 14:37:44";
 Handsontable.packageName = "handsontable";
 Handsontable.version = "6.2.2";
 var baseVersion = "";
@@ -37324,6 +37324,13 @@ function cellDecorator(instance, TD, row, col, prop, value, cellProperties) {
     classesToAdd.push(cellProperties.noWordWrapClassName);
   }
 
+  if (cellProperties.wordWrap && instance.getSettings().trimWhitespace === false) {
+    // see https://github.com/handsontable/handsontable/issues/6232
+    // default css class (.handsontable th, .handsontable td) sets 'white-space: pre-line;' which will not break lines,
+    // thus the ghost table will calculate the width wrong
+    classesToAdd.push('htAllowWrap');
+  }
+
   if (!value && cellProperties.placeholder) {
     classesToAdd.push(cellProperties.placeholderCellClassName);
   }
@@ -38006,7 +38013,9 @@ function textRenderer(instance, TD, row, col, prop, value, cellProperties) {
 
   escaped = (0, _mixed.stringify)(escaped);
 
-  if (!instance.getSettings().trimWhitespace) {
+  if (!instance.getSettings().trimWhitespace && !instance.getSettings().wordWrap) {
+    // see https://github.com/handsontable/handsontable/issues/6232
+    // 160 is &nbsp; which won't wrap and preserves sequences of whitespace
     escaped = escaped.replace(/ /g, String.fromCharCode(160));
   }
 

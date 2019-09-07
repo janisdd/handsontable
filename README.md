@@ -1,3 +1,12 @@
+
+This fork is specifically created for https://github.com/janisdd/vscode-edit-csv because I want to keep the MIT license (and also MIT for the vs code plugin) which was only valid until (including) handsontable version 6.2.2
+
+Below is a list of changes made to this repo (latest first)
+
+- fix for issue https://github.com/handsontable/handsontable/issues/6232 
+
+---
+
 <div align="center">
   <a href="//handsontable.com" target="_blank"><img src="https://raw.githubusercontent.com/handsontable/static-files/master/Images/Logo/Handsontable/Handsontable-logo-300-74-new.png" alt="Handsontable Community Edition logo" /></a>
 </div>

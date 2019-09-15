@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.2.2
- * Release date: 19/12/2018 (built at 15/09/2019 12:52:16)
+ * Release date: 19/12/2018 (built at 15/09/2019 14:27:03)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -29734,7 +29734,7 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "15/09/2019 12:52:16";
+Handsontable.buildDate = "15/09/2019 14:27:03";
 Handsontable.packageName = "handsontable";
 Handsontable.version = "6.2.2";
 var baseVersion = "";
@@ -43282,7 +43282,16 @@ function (_BasePlugin) {
     _this.addHook('beforeColumnResize', function (col, size, isDblClick) {
       return _this.onBeforeColumnResize(col, size, isDblClick);
     });
+    /**
+     * number for the max initial (only on first render) column width or
+     * a function arguments: column index, column width, returns: new column width
+     *
+     * you need to set the in the handsontable cosntructor else this setting has no effect
+     * set it via instance = {... autoColumnSize: { maxColumnWidth: function() {...}}}
+     */
 
+
+    _this.maxColumnWidth = void 0;
     return _this;
   }
   /**
@@ -43315,6 +43324,10 @@ function (_BasePlugin) {
 
       if (setting && setting.useHeaders !== null && setting.useHeaders !== void 0) {
         this.ghostTable.setSetting('useHeaders', setting.useHeaders);
+      }
+
+      if (setting.maxColumnWidth !== void 0 && typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number') {
+        this.maxColumnWidth = setting.maxColumnWidth;
       }
 
       this.setSamplingOptions();
@@ -43560,7 +43573,20 @@ function (_BasePlugin) {
         width = this.widths[column];
 
         if (keepMinimum && typeof width === 'number') {
+          // only used on initial calculation (when the viewport.js > createRenderCalculators > ... > sumColumnWidths > getColumnWidth is called (with keepMinimum: true)
           width = Math.max(width, _src.ViewportColumnsCalculator.DEFAULT_WIDTH);
+
+          if (this.maxColumnWidth !== void 0) {
+            if (typeof this.maxColumnWidth === 'function') {
+              var newWidth = this.maxColumnWidth(column, width);
+
+              if (typeof newWidth === 'number') {
+                width = Math.min(width, newWidth);
+              }
+            } else if (typeof this.maxColumnWidth === 'number') {
+              width = Math.min(width, this.maxColumnWidth);
+            }
+          }
         }
       }
 

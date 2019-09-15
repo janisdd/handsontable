@@ -136,6 +136,15 @@ class AutoColumnSize extends BasePlugin {
 
     // moved to constructor to allow auto-sizing the columns when the plugin is disabled
     this.addHook('beforeColumnResize', (col, size, isDblClick) => this.onBeforeColumnResize(col, size, isDblClick));
+
+    /**
+     * number for the max initial (only on first render) column width or
+     * a function arguments: column index, column width, returns: new column width
+     *
+     * you need to set the in the handsontable cosntructor else this setting has no effect
+     * set it via instance = {... autoColumnSize: { maxColumnWidth: function() {...}}}
+     */
+    this.maxColumnWidth = void 0;
   }
 
   /**
@@ -160,6 +169,10 @@ class AutoColumnSize extends BasePlugin {
 
     if (setting && setting.useHeaders !== null && setting.useHeaders !== void 0) {
       this.ghostTable.setSetting('useHeaders', setting.useHeaders);
+    }
+
+    if (setting.maxColumnWidth !== void 0 && typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number') {
+      this.maxColumnWidth = setting.maxColumnWidth
     }
 
     this.setSamplingOptions();
@@ -347,7 +360,23 @@ class AutoColumnSize extends BasePlugin {
       width = this.widths[column];
 
       if (keepMinimum && typeof width === 'number') {
+        // only used on initial calculation (when the viewport.js > createRenderCalculators > ... > sumColumnWidths > getColumnWidth is called (with keepMinimum: true)
         width = Math.max(width, ViewportColumnsCalculator.DEFAULT_WIDTH);
+
+        if (this.maxColumnWidth !== void 0) {
+
+          if (typeof this.maxColumnWidth === 'function') {
+            const newWidth = this.maxColumnWidth(column, width);
+
+            if (typeof newWidth === 'number') {
+              width = Math.min(width, newWidth);
+            }
+
+          } else if (typeof this.maxColumnWidth === 'number') {
+            width = Math.min(width, this.maxColumnWidth);
+          }
+        }
+
       }
     }
 

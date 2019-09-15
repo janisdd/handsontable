@@ -9,6 +9,23 @@ Below is a list of changes made to this repo (latest first)
   - current behaviour is - `trimWhitespace: true` then whitespace (and new lines) is collapsed visually and trim is applied after cell edit
   - behaviour after fix is - `trimWhitespace: true` then whitespace (and new lines) is visible and trim is applied after cell edit
   - see https://github.com/handsontable/handsontable/issues/6232#issuecomment-531555056 for some more information 
+- added option to `autoColumnSize` Plugin `maxColumnWidth` (number|function) which allows to specify a max width for the very first render
+  - usage:
+    ```typescript
+    let hand = {
+      autoColumnSize: {
+        maxColumnWidth: function(columnIndex: number, column_width: number) {
+          # columnIndex is visual or physical?? probably visual TODO
+          # you can return a new width here...
+        }
+      }
+    }
+    let hand2 = {
+      autoColumnSize: {
+        maxColumnWidth: 300
+      }
+    }
+    ```
 
 ---
 

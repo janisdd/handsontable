@@ -4,6 +4,11 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 Below is a list of changes made to this repo (latest first)
 
 - fix for issue https://github.com/handsontable/handsontable/issues/6232 
+- fixed issue where setting `wordWrap: false` will not display new lines any more
+  - this cannot be easily merged into handsontable because the fix will always preserve whitespace even if `trimWhitespace: true` which will break the current behaviour of handsontalbe
+  - current behaviour is - `trimWhitespace: true` then whitespace (and new lines) is collapsed visually and trim is applied after cell edit
+  - behaviour after fix is - `trimWhitespace: true` then whitespace (and new lines) is visible and trim is applied after cell edit
+  - see https://github.com/handsontable/handsontable/issues/6232#issuecomment-531555056 for some more information 
 
 ---
 

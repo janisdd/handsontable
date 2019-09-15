@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.2.2
- * Release date: 19/12/2018 (built at 07/09/2019 16:35:42)
+ * Release date: 19/12/2018 (built at 15/09/2019 12:52:16)
  */
 /**
  * Fix for bootstrap styles
@@ -193,7 +193,7 @@
 }
 
 .handsontable td.htNoWrap {
-  white-space: nowrap;
+  white-space: pre;
 }
 
 /* see src/renderers/_cellDecorator.js */

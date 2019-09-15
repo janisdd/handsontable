@@ -100,7 +100,7 @@
 }
 
 .handsontable td.htNoWrap {
-  white-space: nowrap;
+  white-space: pre;
 }
 
 /* see src/renderers/_cellDecorator.js */

@@ -103,6 +103,7 @@ declare namespace _Handsontable {
 }
 
 declare namespace Handsontable {
+  import Search = Handsontable.plugins.Search
   namespace wot {
     interface CellCoords {
       col: number,
@@ -766,6 +767,7 @@ declare namespace Handsontable {
     interface FocusableWrapper {
       mainElement: HTMLElement;
       eventManager: EventManager;
+      // @ts-ignore
       listenersCount: WeakSet<HTMLElement>;
 
       useSecondaryElement(): void;
@@ -1383,14 +1385,22 @@ declare namespace Handsontable {
       callback: () => void;
       queryMethod: () => void;
       searchResultClass: string;
+      suspendedSearchResultClass: string
+      isSuspended: boolean
 
-      query(queryStr: string, callback: () => void, queryMethod: () => void): any[];
+      query(queryStr: string, callback?: () => void, queryMethod?: () => void): {row: number, col: number, data?: any}[];
+      queryAsync(queryStr: string, progressCallback: (count: number, maxCount: number, percentage: number) => void, progressEveryXPercent: number,
+                 cancelToken: null | {isCancellationRequested: boolean}, callback?: () => void, queryMethod?: () => void): {row: number, col: number, data?: any}[]
       getCallback(): () => void;
       setCallback(newCallback: () => void): void;
       getQueryMethod(): () => void;
       setQueryMethod(newQueryMethod: () => void): void;
       getSearchResultClass(): string;
       setSearchResultClass(newElementClass: string): void;
+      getSuspendedSearchResultClass(): string
+      setSuspendedSearchResultClass(newElementClass: string): void
+      getIsSuspended(): boolean
+      setIsSuspended(isSuspended: boolean): void
     }
   }
 
@@ -1515,7 +1525,7 @@ declare namespace Handsontable {
     rowHeaders?: boolean | any[] | (() => void);
     rowHeaderWidth?: number | any[];
     rowHeights?: any[] | (() => void) | number | string;
-    search?: boolean;
+    search?: boolean | Search;
     selectOptions?: any[];
     skipColumnOnPaste?: boolean;
     sortByRelevance?: boolean;

@@ -9,6 +9,7 @@ module.exports = {
     "es6": true,
   },
   "rules": {
+    "semi": "off",
     "arrow-parens": [
       "error",
       "as-needed",

@@ -609,6 +609,10 @@ CheckboxRenderer
   color: #583707;
 }
 
+.handsontable td.htSuspendedSearchResult {
+  /* no special styling here since the search is suspended*/
+}
+
 /*
 Cell borders
 */

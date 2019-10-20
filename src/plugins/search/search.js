@@ -6,6 +6,8 @@ import { isUndefined } from './../../helpers/mixed';
 
 const DEFAULT_SEARCH_RESULT_CLASS = 'htSearchResult';
 
+const DEFAULT_SUSPENDED_SEARCH_RESULT_CLASS = 'htSuspendedSearchResult';
+
 const DEFAULT_CALLBACK = function(instance, row, col, data, testResult) {
   instance.getCellMeta(row, col).isSearchResult = testResult;
 };
@@ -75,6 +77,19 @@ class Search extends BasePlugin {
      * @type {String}
      */
     this.searchResultClass = DEFAULT_SEARCH_RESULT_CLASS;
+
+    /**
+     * Class name to exchange for {@link searchResultClass} when the search is suspended
+     * @type {string}
+     */
+    this.suspendedSearchResultClass = DEFAULT_SUSPENDED_SEARCH_RESULT_CLASS
+
+    /**
+     * true: the search is suspended and we use {@link suspendedSearchResultClass} for results,
+     * false: the search is active and we use {@link searchResultClass} for results
+     * @type {boolean}
+     */
+    this.isSuspended = false
   }
 
   /**
@@ -119,6 +134,7 @@ class Search extends BasePlugin {
 
   /**
    * Updates the plugin state. This method is executed when {@link Core#updateSettings} is invoked.
+   * Can be call to force the plugin to update?
    */
   updatePlugin() {
     this.disablePlugin();
@@ -133,7 +149,7 @@ class Search extends BasePlugin {
    * @param {String} queryStr Value to be search.
    * @param {Function} [callback] Callback function performed on cells with values which matches to the searched query.
    * @param {Function} [queryMethod] Query function responsible for determining whether a query matches the value stored in a cell.
-   * @returns {Object[]} Return an array of objects with `row`, `col`, `data` properties or empty array.
+   * @returns {{row: number, col: number, data: string | null | undefined}[]} Return an array of objects with `row`, `col`, `data` properties or empty array.
    */
   query(queryStr, callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
     const rowCount = this.hot.countRows();
@@ -166,6 +182,161 @@ class Search extends BasePlugin {
     });
 
     return queryResult;
+  }
+
+  /**
+   * Makes the async query.
+   *
+   * @param {String} queryStr Value to be search.
+   * @param progressEveryXPercent
+   * @param {Function} progressCallback called when we processed a cell, arg[0] = index, arg[1] = max index, arg[2] = percentage, result = void
+   * @param {{isCancellationRequested: boolean}} cancelToken
+   * @param {Function} [callback] Callback function performed on cells with values which matches to the searched query.
+   * @param {Function} [queryMethod] Query function responsible for determining whether a query matches the value stored in a cell.
+   * @returns {Promise<{row: number, col: number, data: string | null | undefined}[]>} Return an array of objects with `row`, `col`, `data` properties or empty array.
+   */
+  queryAsync(queryStr, progressCallback, progressEveryXPercent = 1, cancelToken, callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
+
+    return new Promise((resolve) => {
+      // start a new macro task
+      setTimeout(() => {
+        const queryResult = []
+        this._queryAsync(queryStr, progressCallback, progressEveryXPercent, progressEveryXPercent, 0, 0, queryResult, cancelToken, callback, queryMethod)
+          .then(() => {
+            resolve(queryResult)
+          })
+      }, 0)
+    })
+  }
+
+  _queryAsync(queryStr, progressCallback, progressEveryXPercent = 1, progressPercentageStopAt,
+              startRowIndex, startColIndex, queryResult, cancelToken = null, callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
+
+    return new Promise((resolve) => {
+      const rowCount = this.hot.countRows();
+      const colCount = this.hot.countCols();
+      const instance = this.hot;
+
+      let percentage = 0;
+      let count = -1
+      const maxCount = rowCount * colCount
+
+      let percentageStepped = false
+      let firstIter = true
+      let isCancellationRequested = false
+
+      let rowIndex = startRowIndex
+      let colIndex = startColIndex
+
+      for (; rowIndex < rowCount; rowIndex++) {
+
+        if (firstIter) {
+          colIndex = startColIndex
+          firstIter = false
+        } else {
+          colIndex = 0
+        }
+
+        for (; colIndex < colCount; colIndex++) {
+
+          // do the break here not at the bottom of the loop because we incremented vars here
+          if (percentageStepped) break
+
+          const cellData = this.hot.getDataAtCell(rowIndex, colIndex)
+          const cellProperties = this.hot.getCellMeta(rowIndex, colIndex)
+          const cellCallback = cellProperties.search.callback || callback
+          const cellQueryMethod = cellProperties.search.queryMethod || queryMethod
+          const testResult = cellQueryMethod(queryStr, cellData)
+
+          if (testResult) {
+            const singleResult = {
+              row: rowIndex,
+              col: colIndex,
+              data: cellData,
+            };
+
+            queryResult.push(singleResult)
+          }
+
+          if (cellCallback) {
+            cellCallback(instance, rowIndex, colIndex, cellData, testResult)
+          }
+
+          count = (rowIndex * colCount) + (colIndex + 1)
+          percentage = count * 100 / maxCount
+
+          // check if query was cancelled
+
+          if (cancelToken && cancelToken.isCancellationRequested) {
+            isCancellationRequested = true
+            break
+          }
+
+          if (percentage - progressPercentageStopAt >= 0) {
+
+            percentageStepped = true
+          }
+        }
+
+        if (isCancellationRequested) break
+
+        // if the inner look broke before colCount then the outer look must not be proceed
+        // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break on outer 0, inner 1
+        //    then we want to start the next recursive call at outer 0, inner 2
+
+        // but if the inner look broke because/on colIndex === colCount
+        // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break on outer 0, inner 2
+        //    then we need to proceed the outer look by 1 so we get in the recursive call outer 1, inner 0
+
+        if (percentageStepped) {
+
+          if (colIndex === colCount) {
+            colIndex = 0
+            // eslint-disable-next-line no-plusplus
+            rowIndex++
+          }
+          break
+        }
+
+        // what if we break at the last (outer + inner) iteration? ... see below
+      }
+
+      if (isCancellationRequested) {
+        queryResult = []
+        resolve()
+        return
+      }
+
+      if (percentageStepped) {
+
+        // update ui
+        progressCallback(count, maxCount, percentage)
+
+        // what if we break at the last iteration?
+        // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break here at outer: 2, inner 2
+        //    then we set outer to 3, inner to 0 BUT we should abort recursion...
+
+        if (rowIndex === rowCount) {
+          resolve()
+          return
+        }
+
+        // ui won't update when we further iterate in this macro task...
+        // start a new macro task and let the browser repaint the ui
+        setTimeout(() => {
+          this._queryAsync(queryStr, progressCallback, progressEveryXPercent, progressPercentageStopAt + progressEveryXPercent,
+            rowIndex, colIndex, queryResult, cancelToken, callback, queryMethod)
+            .then(() => {
+              resolve()
+            })
+        }, 0)
+
+        return
+      }
+
+      // e.g. items count = 10, progressEveryXPercent = 101 then the ui is never updated but this is ok (progressEveryXPercent should be in [0, 100])
+      return resolve()
+    })
   }
 
   /**
@@ -223,6 +394,38 @@ class Search extends BasePlugin {
   }
 
   /**
+   * Gets the suspended search result cell class name
+   * @return {string}
+   */
+  getSuspendedSearchResultClass() {
+    return this.suspendedSearchResultClass
+  }
+
+  /**
+   * Sets suspended search result cells class name. This class name will be exchanged for {@link suspendedSearchResultClass} to each cell that belongs to the searched query.
+   * @param newElementClass
+   */
+  setSuspendedSearchResultClass(newElementClass) {
+    this.suspendedSearchResultClass = newElementClass
+  }
+
+  /**
+   * Gets if the search is suspended
+   * @return {boolean}
+   */
+  getIsSuspended() {
+    return this.isSuspended
+  }
+
+  /**
+   * Sets if the search is suspended (update is needed after this)
+   * @param isSuspended
+   */
+  setIsSuspended(isSuspended) {
+    this.isSuspended = isSuspended
+  }
+
+  /**
    * Updates the settings of the plugin.
    *
    * @param {Object} searchSettings The plugin settings, taken from Handsontable configuration.
@@ -241,6 +444,14 @@ class Search extends BasePlugin {
       if (searchSettings.callback) {
         this.setCallback(searchSettings.callback);
       }
+
+      if (searchSettings.suspendedSearchResultClass) {
+        this.setSuspendedSearchResultClass(searchSettings.suspendedSearchResultClass)
+      }
+
+      if (isUndefined(searchSettings.isSuspended) === false) {
+        this.setIsSuspended(searchSettings.isSuspended)
+      }
     }
   }
 
@@ -256,7 +467,7 @@ class Search extends BasePlugin {
    * @param {Object} cellProperties Object containing the cell's properties.
    */
   onBeforeRenderer(TD, row, col, prop, value, cellProperties) {
-    // TODO: #4972
+
     const className = cellProperties.className || [];
     let classArray = [];
 
@@ -268,12 +479,36 @@ class Search extends BasePlugin {
     }
 
     if (this.isEnabled() && cellProperties.isSearchResult) {
-      if (!classArray.includes(this.searchResultClass)) {
+
+      const searchResultClassIndex = classArray.indexOf(this.searchResultClass)
+      const suspendedSearchResultClassIndex = classArray.indexOf(this.suspendedSearchResultClass)
+
+      // because we don't know the prior state before suspend we just clear both, then re-add
+
+      if (searchResultClassIndex !== -1) {
+        classArray.splice(searchResultClassIndex, 1);
+      }
+
+      if (suspendedSearchResultClassIndex !== -1) {
+        classArray.splice(suspendedSearchResultClassIndex, 1);
+      }
+
+      if (this.isSuspended) {
+        classArray.push(`${this.suspendedSearchResultClass}`);
+      } else {
         classArray.push(`${this.searchResultClass}`);
       }
 
-    } else if (classArray.includes(this.searchResultClass)) {
-      classArray.splice(classArray.indexOf(this.searchResultClass), 1);
+    } else {
+
+      if (classArray.includes(this.searchResultClass)) {
+        classArray.splice(classArray.indexOf(this.searchResultClass), 1);
+      }
+
+      if (classArray.includes(this.suspendedSearchResultClass)) {
+        classArray.splice(classArray.indexOf(this.suspendedSearchResultClass), 1);
+      }
+
     }
 
     cellProperties.className = classArray.join(' ');

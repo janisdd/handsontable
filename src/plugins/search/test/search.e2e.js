@@ -43,6 +43,148 @@ describe('Search plugin', () => {
       expect(hot.getPlugin('search')).toBeDefined();
     });
 
+    it('should suspend plugin using updateSettings', () => {
+
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(3, 3),
+        search: true
+      });
+
+      hot.getPlugin('search').query('2');
+
+      render();
+
+      const searchResultClass = hot.getPlugin('search').searchResultClass;
+      const suspendedSearchResultClass = hot.getPlugin('search').suspendedSearchResultClass;
+
+      let cell = hot.getCell(0, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(0, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(0, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(1, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(true);
+      cell = hot.getCell(1, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(true);
+      cell = hot.getCell(1, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(true);
+      cell = hot.getCell(2, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+
+      cell = hot.getCell(0, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(0, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(0, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+
+      hot.updateSettings({
+        search: {
+          isSuspended: true
+        }
+      });
+
+      cell = hot.getCell(0, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(0, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(0, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(1, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(1, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(1, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+
+      cell = hot.getCell(0, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(0, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(0, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(true);
+      cell = hot.getCell(1, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(true);
+      cell = hot.getCell(1, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(true);
+      cell = hot.getCell(2, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+
+      hot.updateSettings({
+        search: {
+          isSuspended: false
+        }
+      });
+
+      cell = hot.getCell(0, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(0, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(0, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(1, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(true);
+      cell = hot.getCell(1, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(true);
+      cell = hot.getCell(1, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(true);
+      cell = hot.getCell(2, 0);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 1);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+      cell = hot.getCell(2, 2);
+      expect($(cell).hasClass(searchResultClass)).toBe(false);
+
+      cell = hot.getCell(0, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(0, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(0, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(1, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 0);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 1);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+      cell = hot.getCell(2, 2);
+      expect($(cell).hasClass(suspendedSearchResultClass)).toBe(false);
+
+    })
+
     it('should remove default search result class to cells when disable plugin', () => {
       const hot = handsontable({
         data: Handsontable.helper.createSpreadsheetData(3, 3),
@@ -548,4 +690,265 @@ describe('Search plugin', () => {
       expect(cellClassName).toBe('cell');
     });
   });
+
+  describe('async search', () => {
+
+    it('should work just like sync search', async() => {
+
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(3, 3),
+        search: true,
+        className: 'cell',
+      });
+
+      const res = await hot.getPlugin('search').queryAsync('2');
+
+      expect(res.length).toBe(3);
+
+      render();
+
+      let cellClassName = hot.getCell(0, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 2).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(1, 0).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(1, 1).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(1, 2).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(2, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 2).className;
+      expect(cellClassName).toBe('cell');
+
+    })
+
+    it('should respect cancellation token', async() => {
+
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(3, 3),
+        search: true,
+        className: 'cell',
+      });
+
+      const cancellationToken = {
+        isCancellationRequested: true
+      }
+
+      const res = await hot.getPlugin('search').queryAsync('2', cancellationToken);
+      render();
+
+      expect(res.length).toBe(0);
+      expect(cancellationToken.isCancellationRequested).toBe(true);
+
+      // we cancelled so no cell should matched
+      let cellClassName = hot.getCell(0, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 2).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(1, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(1, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(1, 2).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 2).className;
+      expect(cellClassName).toBe('cell');
+
+    })
+
+    it('should call progressCallback', async() => {
+
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(3, 3),
+        search: true,
+        className: 'cell',
+      });
+
+      const cancellationToken = {
+        isCancellationRequested: false
+      }
+
+      const progressCallbackObj = {
+        progressCallbac() {
+        }
+      }
+
+      spyOn(progressCallbackObj, 'progressCallbac');
+
+      const progressCallbac = progressCallbackObj.progressCallbac
+
+      // percentage is not that important here because we have only 9 cells....
+      const res = await hot.getPlugin('search').queryAsync('2', cancellationToken, progressCallbac, 1);
+
+      expect(res.length).toBe(3);
+
+      expect(progressCallbac.calls.count()).toEqual(9);
+
+      expect(cancellationToken.isCancellationRequested).toBe(false);
+
+      render();
+      console.log('res', res);
+
+      let cellClassName = hot.getCell(0, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 2).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(1, 0).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(1, 1).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(1, 2).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(2, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 2).className;
+      expect(cellClassName).toBe('cell');
+
+    })
+
+    it('should work without progressCallback', async() => {
+
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(3, 3),
+        search: true,
+        className: 'cell',
+      });
+
+      const cancellationToken = {
+        isCancellationRequested: false
+      }
+
+      // percentage is not that important here because we have only 9 cells....
+      const res = await hot.getPlugin('search').queryAsync('2', cancellationToken, null, 1);
+
+      expect(res.length).toBe(3);
+
+      expect(cancellationToken.isCancellationRequested).toBe(false);
+
+      render();
+
+      let cellClassName = hot.getCell(0, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(0, 2).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(1, 0).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(1, 1).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(1, 2).className;
+      expect(cellClassName).toBe('cell htSearchResult');
+      cellClassName = hot.getCell(2, 0).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 1).className;
+      expect(cellClassName).toBe('cell');
+      cellClassName = hot.getCell(2, 2).className;
+      expect(cellClassName).toBe('cell');
+
+    })
+
+    it('should invoke default callback for each cell', async() => {
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(5, 5),
+        search: true
+      });
+
+      spyOn(hot.getPlugin('search'), 'callback');
+
+      const callback = hot.getPlugin('search').callback;
+
+      await hot.getPlugin('search').queryAsync('A');
+
+      expect(callback.calls.count()).toEqual(25);
+    });
+
+    it('should use the default query method if no queryMethod is passed to query function', async() => {
+      const hot = handsontable({
+        data: Handsontable.helper.createSpreadsheetData(5, 5),
+        search: true
+      });
+
+      spyOn(hot.getPlugin('search'), 'queryMethod');
+
+      const queryMethod = hot.getPlugin('search').getQueryMethod();
+
+      await hot.getPlugin('search').queryAsync('A');
+
+      expect(queryMethod.calls.count()).toEqual(25);
+    });
+
+    describe('async search works properly (despite index recursion)', () => {
+
+      it('should increment in inner loop', async() => {
+
+        const hot = handsontable({
+          data: Handsontable.helper.createSpreadsheetData(10, 10),
+          search: true,
+          className: 'cell',
+        });
+
+        // progress would be called when colIndex < colCount (inner for handles increment)
+        // and we want to find the cell after that happens
+        const res = await hot.getPlugin('search').queryAsync('j1', null, null, 9);
+        expect(res.length).toBe(2);
+
+        expect(res[0].row).toBe(0);
+        expect(res[0].col).toBe(9);
+
+        expect(res[1].row).toBe(9);
+        expect(res[1].col).toBe(9);
+      });
+
+      it('should increment after inner loop and before outer loop', async() => {
+
+        const hot = handsontable({
+          data: Handsontable.helper.createSpreadsheetData(1, 10),
+          search: true,
+          className: 'cell',
+        });
+
+        // progress would be called when colIndex === colCount (if after inner for handles increment)
+        // and we want to find the cell after that happens
+        const res = await hot.getPlugin('search').queryAsync('g1', null, null, 60);
+        expect(res.length).toBe(1);
+        expect(res[0].row).toBe(0);
+        expect(res[0].col).toBe(6);
+      });
+
+      it('should increment after inner loop and outer loop (last iteration)', async() => {
+
+        const hot = handsontable({
+          data: Handsontable.helper.createSpreadsheetData(10, 10),
+          search: true,
+          className: 'cell',
+        });
+
+        // progress would be called when colIndex === colCount and rowIndex === rowCount
+        // and we want to find the cell after/when that happens
+        const res = await hot.getPlugin('search').queryAsync('j10', null, null, 100);
+        expect(res.length).toBe(1);
+        expect(res[0].row).toBe(9);
+        expect(res[0].col).toBe(9);
+      });
+
+    })
+
+  })
 });

@@ -23,8 +23,8 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
- * Version: 6.2.2
- * Release date: 19/12/2018 (built at 15/09/2019 14:27:03)
+ * Version: 6.3.0
+ * Release date: 19/12/2018 (built at 25/10/2019 14:47:37)
  */
 /**
  * Fix for bootstrap styles
@@ -700,6 +700,10 @@ CheckboxRenderer
 .handsontable td.htSearchResult {
   background: #fcedd9;
   color: #583707;
+}
+
+.handsontable td.htSuspendedSearchResult {
+  /* no special styling here since the search is suspended*/
 }
 
 /*

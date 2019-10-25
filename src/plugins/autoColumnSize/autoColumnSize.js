@@ -171,7 +171,8 @@ class AutoColumnSize extends BasePlugin {
       this.ghostTable.setSetting('useHeaders', setting.useHeaders);
     }
 
-    if (setting.maxColumnWidth !== void 0 && typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number') {
+    if (setting && setting.maxColumnWidth !== null && setting.maxColumnWidth !== void 0 &&
+      (typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number')) {
       this.maxColumnWidth = setting.maxColumnWidth
     }
 

@@ -188,20 +188,21 @@ class Search extends BasePlugin {
    * Makes the async query.
    *
    * @param {String} queryStr Value to be search.
-   * @param progressEveryXPercent
-   * @param {Function} progressCallback called when we processed a cell, arg[0] = index, arg[1] = max index, arg[2] = percentage, result = void
-   * @param {{isCancellationRequested: boolean}} cancelToken
+   * @param progressEveryXPercent specified on which percentage interval {@param progressCallback} should be called
+   * @param {Function} progressCallback called when we processed a cell AND {@param progressEveryXPercent} was hit, arg[0] = index, arg[1] = max index, arg[2] = percentage, result = void
+   * @param {{isCancellationRequested: boolean} | null} cancellationToken
    * @param {Function} [callback] Callback function performed on cells with values which matches to the searched query.
    * @param {Function} [queryMethod] Query function responsible for determining whether a query matches the value stored in a cell.
    * @returns {Promise<{row: number, col: number, data: string | null | undefined}[]>} Return an array of objects with `row`, `col`, `data` properties or empty array.
    */
-  queryAsync(queryStr, progressCallback, progressEveryXPercent = 1, cancelToken, callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
+  queryAsync(queryStr, cancellationToken = null, progressCallback = null, progressEveryXPercent = 10,
+             callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
 
     return new Promise((resolve) => {
       // start a new macro task
       setTimeout(() => {
         const queryResult = []
-        this._queryAsync(queryStr, progressCallback, progressEveryXPercent, progressEveryXPercent, 0, 0, queryResult, cancelToken, callback, queryMethod)
+        this._queryAsync(queryStr, cancellationToken, progressCallback, progressEveryXPercent, progressEveryXPercent, 0, 0, queryResult, callback, queryMethod)
           .then(() => {
             resolve(queryResult)
           })
@@ -209,8 +210,23 @@ class Search extends BasePlugin {
     })
   }
 
-  _queryAsync(queryStr, progressCallback, progressEveryXPercent = 1, progressPercentageStopAt,
-              startRowIndex, startColIndex, queryResult, cancelToken = null, callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
+  /**
+   * aaa
+   * @param queryStr
+   * @param {{isCancellationRequested: boolean} | null} cancellationToken
+   * @param progressCallback
+   * @param progressEveryXPercent
+   * @param progressPercentageCallbackAt
+   * @param startRowIndex
+   * @param startColIndex
+   * @param queryResult
+   * @param callback
+   * @param queryMethod
+   * @return {Promise<unknown>}
+   * @private
+   */
+  _queryAsync(queryStr, cancellationToken = null, progressCallback = null, progressEveryXPercent = 1, progressPercentageCallbackAt,
+              startRowIndex, startColIndex, queryResult, callback = this.getCallback(), queryMethod = this.getQueryMethod()) {
 
     return new Promise((resolve) => {
       const rowCount = this.hot.countRows();
@@ -267,13 +283,12 @@ class Search extends BasePlugin {
 
           // check if query was cancelled
 
-          if (cancelToken && cancelToken.isCancellationRequested) {
+          if (cancellationToken && cancellationToken.isCancellationRequested) {
             isCancellationRequested = true
             break
           }
 
-          if (percentage - progressPercentageStopAt >= 0) {
-
+          if (percentage - progressPercentageCallbackAt >= 0) {
             percentageStepped = true
           }
         }
@@ -290,7 +305,7 @@ class Search extends BasePlugin {
 
         if (percentageStepped) {
 
-          if (colIndex === colCount) {
+          if (colIndex >= colCount) { // >= just to be safe here
             colIndex = 0
             // eslint-disable-next-line no-plusplus
             rowIndex++
@@ -302,21 +317,25 @@ class Search extends BasePlugin {
       }
 
       if (isCancellationRequested) {
-        queryResult = []
+        // see https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+        // or queryResult.splice(0, queryResult.length)
+        queryResult.length = 0
         resolve()
         return
       }
 
       if (percentageStepped) {
 
-        // update ui
-        progressCallback(count, maxCount, percentage)
+        // e.g. update ui
+        if (progressCallback) {
+          progressCallback(count, maxCount, percentage)
+        }
 
         // what if we break at the last iteration?
         // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break here at outer: 2, inner 2
         //    then we set outer to 3, inner to 0 BUT we should abort recursion...
 
-        if (rowIndex === rowCount) {
+        if (rowIndex >= rowCount) { // >= just to be safe here
           resolve()
           return
         }
@@ -324,8 +343,8 @@ class Search extends BasePlugin {
         // ui won't update when we further iterate in this macro task...
         // start a new macro task and let the browser repaint the ui
         setTimeout(() => {
-          this._queryAsync(queryStr, progressCallback, progressEveryXPercent, progressPercentageStopAt + progressEveryXPercent,
-            rowIndex, colIndex, queryResult, cancelToken, callback, queryMethod)
+          this._queryAsync(queryStr, cancellationToken, progressCallback, progressEveryXPercent, progressPercentageCallbackAt + progressEveryXPercent,
+            rowIndex, colIndex, queryResult, callback, queryMethod)
             .then(() => {
               resolve()
             })

@@ -1,5 +1,5 @@
 
-This fork is specifically created for https://github.com/janisdd/vscode-edit-csv because I want to keep the MIT license (and also MIT for the vs code plugin) which was only valid until (including) handsontable version 6.2.2
+This fork is specifically created for https://github.com/janisdd/vscode-edit-csv because I want to keep the MIT license (and also MIT for the vs code plugin) which was only valid until (including) handsontable version 6.2.2 (https://github.com/janisdd/handsontable)
 
 Below is a list of changes made to this repo (latest first)
 
@@ -26,6 +26,10 @@ Below is a list of changes made to this repo (latest first)
       }
     }
     ```
+    
+- modified search plugin to support
+  - suspend (swap match css class with another one)
+  - async search to update ui and support cancelling
 
 ---
 

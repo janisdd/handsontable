@@ -82,7 +82,7 @@ describe('CellDecorator', () => {
 
   });
 
-  it('should set "white-space" css parameter to "nowrap" if htNoWrap class is added to a cell', () => {
+  it('should set "white-space" css parameter to "pre" if htNoWrap class is added to a cell', () => {
     handsontable({
       data: arrayOfObjects(),
       columns: [
@@ -97,7 +97,7 @@ describe('CellDecorator', () => {
     getCellMeta(1, 1).wordWrap = false;
     render();
 
-    expect(window.getComputedStyle(getCell(1, 1)).whiteSpace).toEqual('nowrap');
+    expect(window.getComputedStyle(getCell(1, 1)).whiteSpace).toEqual('pre');
   });
 
   it('should not add cell `htInvalid` class when trying to add not proper value', (done) => {

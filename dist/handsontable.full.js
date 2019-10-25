@@ -23,8 +23,8 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
- * Version: 6.2.2
- * Release date: 19/12/2018 (built at 15/09/2019 14:27:03)
+ * Version: 6.3.0
+ * Release date: 19/12/2018 (built at 25/10/2019 14:47:37)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -34998,9 +34998,9 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "15/09/2019 14:27:03";
+Handsontable.buildDate = "25/10/2019 14:47:37";
 Handsontable.packageName = "handsontable";
-Handsontable.version = "6.2.2";
+Handsontable.version = "6.3.0";
 var baseVersion = "";
 
 if (baseVersion) {
@@ -50065,7 +50065,7 @@ function (_BasePlugin) {
         this.ghostTable.setSetting('useHeaders', setting.useHeaders);
       }
 
-      if (setting.maxColumnWidth !== void 0 && typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number') {
+      if (setting && setting.maxColumnWidth !== null && setting.maxColumnWidth !== void 0 && (typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number')) {
         this.maxColumnWidth = setting.maxColumnWidth;
       }
 
@@ -69103,6 +69103,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
 
 var DEFAULT_SEARCH_RESULT_CLASS = 'htSearchResult';
+var DEFAULT_SUSPENDED_SEARCH_RESULT_CLASS = 'htSuspendedSearchResult';
 
 var DEFAULT_CALLBACK = function DEFAULT_CALLBACK(instance, row, col, data, testResult) {
   instance.getCellMeta(row, col).isSearchResult = testResult;
@@ -69186,6 +69187,19 @@ function (_BasePlugin) {
      */
 
     _this.searchResultClass = DEFAULT_SEARCH_RESULT_CLASS;
+    /**
+     * Class name to exchange for {@link searchResultClass} when the search is suspended
+     * @type {string}
+     */
+
+    _this.suspendedSearchResultClass = DEFAULT_SUSPENDED_SEARCH_RESULT_CLASS;
+    /**
+     * true: the search is suspended and we use {@link suspendedSearchResultClass} for results,
+     * false: the search is active and we use {@link searchResultClass} for results
+     * @type {boolean}
+     */
+
+    _this.isSuspended = false;
     return _this;
   }
   /**
@@ -69244,6 +69258,7 @@ function (_BasePlugin) {
     }
     /**
      * Updates the plugin state. This method is executed when {@link Core#updateSettings} is invoked.
+     * Can be call to force the plugin to update?
      */
 
   }, {
@@ -69260,7 +69275,7 @@ function (_BasePlugin) {
      * @param {String} queryStr Value to be search.
      * @param {Function} [callback] Callback function performed on cells with values which matches to the searched query.
      * @param {Function} [queryMethod] Query function responsible for determining whether a query matches the value stored in a cell.
-     * @returns {Object[]} Return an array of objects with `row`, `col`, `data` properties or empty array.
+     * @returns {{row: number, col: number, data: string | null | undefined}[]} Return an array of objects with `row`, `col`, `data` properties or empty array.
      */
 
   }, {
@@ -69299,6 +69314,187 @@ function (_BasePlugin) {
         });
       });
       return queryResult;
+    }
+    /**
+     * Makes the async query.
+     *
+     * @param {String} queryStr Value to be search.
+     * @param progressEveryXPercent specified on which percentage interval {@param progressCallback} should be called
+     * @param {Function} progressCallback called when we processed a cell AND {@param progressEveryXPercent} was hit, arg[0] = index, arg[1] = max index, arg[2] = percentage, result = void
+     * @param {{isCancellationRequested: boolean} | null} cancellationToken
+     * @param {Function} [callback] Callback function performed on cells with values which matches to the searched query.
+     * @param {Function} [queryMethod] Query function responsible for determining whether a query matches the value stored in a cell.
+     * @returns {Promise<{row: number, col: number, data: string | null | undefined}[]>} Return an array of objects with `row`, `col`, `data` properties or empty array.
+     */
+
+  }, {
+    key: "queryAsync",
+    value: function queryAsync(queryStr) {
+      var _this5 = this;
+
+      var cancellationToken = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var progressCallback = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var progressEveryXPercent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 10;
+      var callback = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : this.getCallback();
+      var queryMethod = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : this.getQueryMethod();
+      return new Promise(function (resolve) {
+        // start a new macro task
+        setTimeout(function () {
+          var queryResult = [];
+
+          _this5._queryAsync(queryStr, cancellationToken, progressCallback, progressEveryXPercent, progressEveryXPercent, 0, 0, queryResult, callback, queryMethod).then(function () {
+            resolve(queryResult);
+          });
+        }, 0);
+      });
+    }
+    /**
+     * aaa
+     * @param queryStr
+     * @param {{isCancellationRequested: boolean} | null} cancellationToken
+     * @param progressCallback
+     * @param progressEveryXPercent
+     * @param progressPercentageCallbackAt
+     * @param startRowIndex
+     * @param startColIndex
+     * @param queryResult
+     * @param callback
+     * @param queryMethod
+     * @return {Promise<unknown>}
+     * @private
+     */
+
+  }, {
+    key: "_queryAsync",
+    value: function _queryAsync(queryStr) {
+      var _this6 = this;
+
+      var cancellationToken = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var progressCallback = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var progressEveryXPercent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+      var progressPercentageCallbackAt = arguments.length > 4 ? arguments[4] : undefined;
+      var startRowIndex = arguments.length > 5 ? arguments[5] : undefined;
+      var startColIndex = arguments.length > 6 ? arguments[6] : undefined;
+      var queryResult = arguments.length > 7 ? arguments[7] : undefined;
+      var callback = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : this.getCallback();
+      var queryMethod = arguments.length > 9 && arguments[9] !== undefined ? arguments[9] : this.getQueryMethod();
+      return new Promise(function (resolve) {
+        var rowCount = _this6.hot.countRows();
+
+        var colCount = _this6.hot.countCols();
+
+        var instance = _this6.hot;
+        var percentage = 0;
+        var count = -1;
+        var maxCount = rowCount * colCount;
+        var percentageStepped = false;
+        var firstIter = true;
+        var isCancellationRequested = false;
+        var rowIndex = startRowIndex;
+        var colIndex = startColIndex;
+
+        for (; rowIndex < rowCount; rowIndex++) {
+          if (firstIter) {
+            colIndex = startColIndex;
+            firstIter = false;
+          } else {
+            colIndex = 0;
+          }
+
+          for (; colIndex < colCount; colIndex++) {
+            // do the break here not at the bottom of the loop because we incremented vars here
+            if (percentageStepped) break;
+
+            var cellData = _this6.hot.getDataAtCell(rowIndex, colIndex);
+
+            var cellProperties = _this6.hot.getCellMeta(rowIndex, colIndex);
+
+            var cellCallback = cellProperties.search.callback || callback;
+            var cellQueryMethod = cellProperties.search.queryMethod || queryMethod;
+            var testResult = cellQueryMethod(queryStr, cellData);
+
+            if (testResult) {
+              var singleResult = {
+                row: rowIndex,
+                col: colIndex,
+                data: cellData
+              };
+              queryResult.push(singleResult);
+            }
+
+            if (cellCallback) {
+              cellCallback(instance, rowIndex, colIndex, cellData, testResult);
+            }
+
+            count = rowIndex * colCount + (colIndex + 1);
+            percentage = count * 100 / maxCount; // check if query was cancelled
+
+            if (cancellationToken && cancellationToken.isCancellationRequested) {
+              isCancellationRequested = true;
+              break;
+            }
+
+            if (percentage - progressPercentageCallbackAt >= 0) {
+              percentageStepped = true;
+            }
+          }
+
+          if (isCancellationRequested) break; // if the inner look broke before colCount then the outer look must not be proceed
+          // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break on outer 0, inner 1
+          //    then we want to start the next recursive call at outer 0, inner 2
+          // but if the inner look broke because/on colIndex === colCount
+          // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break on outer 0, inner 2
+          //    then we need to proceed the outer look by 1 so we get in the recursive call outer 1, inner 0
+
+          if (percentageStepped) {
+            if (colIndex >= colCount) {
+              // >= just to be safe here
+              colIndex = 0; // eslint-disable-next-line no-plusplus
+
+              rowIndex++;
+            }
+
+            break;
+          } // what if we break at the last (outer + inner) iteration? ... see below
+
+        }
+
+        if (isCancellationRequested) {
+          // see https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+          // or queryResult.splice(0, queryResult.length)
+          queryResult.length = 0;
+          resolve();
+          return;
+        }
+
+        if (percentageStepped) {
+          // e.g. update ui
+          if (progressCallback) {
+            progressCallback(count, maxCount, percentage);
+          } // what if we break at the last iteration?
+          // e.g. outer loop: 0 to inclusive 2, inner loop: 0 to inclusive 2 and we break here at outer: 2, inner 2
+          //    then we set outer to 3, inner to 0 BUT we should abort recursion...
+
+
+          if (rowIndex >= rowCount) {
+            // >= just to be safe here
+            resolve();
+            return;
+          } // ui won't update when we further iterate in this macro task...
+          // start a new macro task and let the browser repaint the ui
+
+
+          setTimeout(function () {
+            _this6._queryAsync(queryStr, cancellationToken, progressCallback, progressEveryXPercent, progressPercentageCallbackAt + progressEveryXPercent, rowIndex, colIndex, queryResult, callback, queryMethod).then(function () {
+              resolve();
+            });
+          }, 0);
+          return;
+        } // e.g. items count = 10, progressEveryXPercent = 101 then the ui is never updated but this is ok (progressEveryXPercent should be in [0, 100])
+
+
+        return resolve();
+      });
     }
     /**
      * Gets the callback function.
@@ -69367,6 +69563,46 @@ function (_BasePlugin) {
       this.searchResultClass = newElementClass;
     }
     /**
+     * Gets the suspended search result cell class name
+     * @return {string}
+     */
+
+  }, {
+    key: "getSuspendedSearchResultClass",
+    value: function getSuspendedSearchResultClass() {
+      return this.suspendedSearchResultClass;
+    }
+    /**
+     * Sets suspended search result cells class name. This class name will be exchanged for {@link suspendedSearchResultClass} to each cell that belongs to the searched query.
+     * @param newElementClass
+     */
+
+  }, {
+    key: "setSuspendedSearchResultClass",
+    value: function setSuspendedSearchResultClass(newElementClass) {
+      this.suspendedSearchResultClass = newElementClass;
+    }
+    /**
+     * Gets if the search is suspended
+     * @return {boolean}
+     */
+
+  }, {
+    key: "getIsSuspended",
+    value: function getIsSuspended() {
+      return this.isSuspended;
+    }
+    /**
+     * Sets if the search is suspended (update is needed after this)
+     * @param isSuspended
+     */
+
+  }, {
+    key: "setIsSuspended",
+    value: function setIsSuspended(isSuspended) {
+      this.isSuspended = isSuspended;
+    }
+    /**
      * Updates the settings of the plugin.
      *
      * @param {Object} searchSettings The plugin settings, taken from Handsontable configuration.
@@ -69388,6 +69624,14 @@ function (_BasePlugin) {
         if (searchSettings.callback) {
           this.setCallback(searchSettings.callback);
         }
+
+        if (searchSettings.suspendedSearchResultClass) {
+          this.setSuspendedSearchResultClass(searchSettings.suspendedSearchResultClass);
+        }
+
+        if ((0, _mixed.isUndefined)(searchSettings.isSuspended) === false) {
+          this.setIsSuspended(searchSettings.isSuspended);
+        }
       }
     }
     /** *
@@ -69405,7 +69649,6 @@ function (_BasePlugin) {
   }, {
     key: "onBeforeRenderer",
     value: function onBeforeRenderer(TD, row, col, prop, value, cellProperties) {
-      // TODO: #4972
       var className = cellProperties.className || [];
       var classArray = [];
 
@@ -69418,11 +69661,30 @@ function (_BasePlugin) {
       }
 
       if (this.isEnabled() && cellProperties.isSearchResult) {
-        if (!classArray.includes(this.searchResultClass)) {
+        var searchResultClassIndex = classArray.indexOf(this.searchResultClass);
+        var suspendedSearchResultClassIndex = classArray.indexOf(this.suspendedSearchResultClass); // because we don't know the prior state before suspend we just clear both, then re-add
+
+        if (searchResultClassIndex !== -1) {
+          classArray.splice(searchResultClassIndex, 1);
+        }
+
+        if (suspendedSearchResultClassIndex !== -1) {
+          classArray.splice(suspendedSearchResultClassIndex, 1);
+        }
+
+        if (this.isSuspended) {
+          classArray.push("".concat(this.suspendedSearchResultClass));
+        } else {
           classArray.push("".concat(this.searchResultClass));
         }
-      } else if (classArray.includes(this.searchResultClass)) {
-        classArray.splice(classArray.indexOf(this.searchResultClass), 1);
+      } else {
+        if (classArray.includes(this.searchResultClass)) {
+          classArray.splice(classArray.indexOf(this.searchResultClass), 1);
+        }
+
+        if (classArray.includes(this.suspendedSearchResultClass)) {
+          classArray.splice(classArray.indexOf(this.suspendedSearchResultClass), 1);
+        }
       }
 
       cellProperties.className = classArray.join(' ');

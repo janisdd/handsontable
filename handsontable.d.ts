@@ -1389,8 +1389,9 @@ declare namespace Handsontable {
       isSuspended: boolean
 
       query(queryStr: string, callback?: () => void, queryMethod?: () => void): {row: number, col: number, data?: any}[];
-      queryAsync(queryStr: string, progressCallback: (count: number, maxCount: number, percentage: number) => void, progressEveryXPercent: number,
-                 cancelToken: null | {isCancellationRequested: boolean}, callback?: () => void, queryMethod?: () => void): {row: number, col: number, data?: any}[]
+      queryAsync(queryStr: string, cancellationToken: null | {isCancellationRequested: boolean},
+                 progressCallback: ((count: number, maxCount: number, percentage: number) => void) | null, progressEveryXPercent?: number,
+                 callback?: () => void, queryMethod?: () => void): {row: number, col: number, data?: any}[]
       getCallback(): () => void;
       setCallback(newCallback: () => void): void;
       getQueryMethod(): () => void;

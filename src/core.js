@@ -412,7 +412,9 @@ export default function Core(rootElement, userSettings, rootInstanceSymbol = fal
               const fixedRowsTop = instance.getSettings().fixedRowsTop;
 
               if (fixedRowsTop >= calcIndex + 1) {
-                instance.getSettings().fixedRowsTop -= Math.min(groupAmount, fixedRowsTop - calcIndex);
+                // this had a bug here we could not set the fixed rows after removing a row...
+                // this will now: e.g. fixed rows: 3 [0,1,2] and we remove the first row the the 4-th row will be pushed so we have [1,2,3]
+                // instance.getSettings().fixedRowsTop -= Math.min(groupAmount, fixedRowsTop - calcIndex); // OLD
               }
 
               const fixedRowsBottom = instance.getSettings().fixedRowsBottom;
@@ -465,7 +467,8 @@ export default function Core(rootElement, userSettings, rootInstanceSymbol = fal
               const fixedColumnsLeft = instance.getSettings().fixedColumnsLeft;
 
               if (fixedColumnsLeft >= calcIndex + 1) {
-                instance.getSettings().fixedColumnsLeft -= Math.min(groupAmount, fixedColumnsLeft - calcIndex);
+                // this is the same as for remove_row
+                // instance.getSettings().fixedColumnsLeft -= Math.min(groupAmount, fixedColumnsLeft - calcIndex); //OLD
               }
 
               if (Array.isArray(instance.getSettings().colHeaders)) {

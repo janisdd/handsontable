@@ -1,14 +1,18 @@
 
 This fork is specifically created for https://github.com/janisdd/vscode-edit-csv because I want to keep the MIT license (and also MIT for the vs code plugin) which was only valid until (including) handsontable version 6.2.2 (https://github.com/janisdd/handsontable)
 
+**Note that the dist might not be up to date (!!!), you need to run `npm run build` to get the output (`dist/`)**
+
 Below is a list of changes made to this repo (latest first)
 
-- fix for issue https://github.com/handsontable/handsontable/issues/6232 
+- fixed issue where `fixedRowsTop` and `fixedColumnsLeft` could not be changed/set after we removed a row/col
+
+- fix for issue https://github.com/handsontable/handsontable/issues/6232
 - fixed issue where setting `wordWrap: false` will not display new lines any more
   - this cannot be easily merged into handsontable because the fix will always preserve whitespace even if `trimWhitespace: true` which will break the current behaviour of handsontalbe
   - current behaviour is - `trimWhitespace: true` then whitespace (and new lines) is collapsed visually and trim is applied after cell edit
   - behaviour after fix is - `trimWhitespace: true` then whitespace (and new lines) is visible and trim is applied after cell edit
-  - see https://github.com/handsontable/handsontable/issues/6232#issuecomment-531555056 for some more information 
+  - see https://github.com/handsontable/handsontable/issues/6232#issuecomment-531555056 for some more information
 - added option to `autoColumnSize` Plugin `maxColumnWidth` (number|function) which allows to specify a max width for the very first render
   - usage:
     ```typescript
@@ -26,7 +30,7 @@ Below is a list of changes made to this repo (latest first)
       }
     }
     ```
-    
+
 - modified search plugin to support
   - suspend (swap match css class with another one)
   - async search to update ui and support cancelling

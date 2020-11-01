@@ -200,6 +200,7 @@ class ColumnSorting extends BasePlugin {
    *
    * **Note**: Please keep in mind that every call of `sort` function set an entirely new sort order. Previous sort configs aren't preserved.
    *
+   * @param discardPreviousSorting {boolean} we discard the previous sorting
    * @example
    * ```js
    * // sort ascending first visual column
@@ -209,7 +210,53 @@ class ColumnSorting extends BasePlugin {
    * @fires Hooks#beforeColumnSort
    * @fires Hooks#afterColumnSort
    */
-  sort(sortConfig) {
+  sort(sortConfig, discardPreviousSorting) {
+    const currentSortConfig = this.getSortConfig();
+
+    // We always pass configs defined as an array to `beforeColumnSort` and `afterColumnSort` hooks.
+    const destinationSortConfigs = this.getNormalizedSortConfigs(sortConfig);
+
+    const sortPossible = this.areValidSortConfigs(destinationSortConfigs);
+    const allowSort = this.hot.runHooks('beforeColumnSort', currentSortConfig, destinationSortConfigs, sortPossible);
+
+    if (allowSort === false) {
+      return;
+    }
+
+    if (sortPossible) {
+      const translateColumnToPhysical = ({ column: visualColumn, ...restOfProperties }) =>
+        ({ column: this.hot.toPhysicalColumn(visualColumn), ...restOfProperties });
+      const internalSortStates = arrayMap(destinationSortConfigs, columnSortConfig => translateColumnToPhysical(columnSortConfig));
+
+      this.columnStatesManager.setSortStates(internalSortStates);
+      this.sortByPresetSortStates();
+      this.saveAllSortSettings();
+
+      this.hot.render();
+      this.hot.view.wt.draw(true); // TODO: Workaround? One test won't pass after removal. It should be refactored / described.
+    }
+
+    this.hot.runHooks('afterColumnSort', currentSortConfig, this.getSortConfig(), sortPossible);
+  }
+
+  /**
+   * Sorts the table by chosen columns and orders.
+   *
+   * @param {undefined|Object} sortConfig Single column sort configuration. The configuration object contains `column` and `sortOrder` properties.
+   * First of them contains visual column index, the second one contains sort order (`asc` for ascending, `desc` for descending).
+   *
+   * **Note**: Please keep in mind that every call of `sort` function set an entirely new sort order. Previous sort configs aren't preserved.
+   *
+   * @example
+   * ```js
+   * // sort ascending first visual column
+   * hot.getPlugin('columnSorting').sort({ column: 0, sortOrder: 'asc' });
+   * ```
+   *
+   * @fires Hooks#beforeColumnSort
+   * @fires Hooks#afterColumnSort
+   */
+  oldSort(sortConfig) {
     const currentSortConfig = this.getSortConfig();
 
     // We always pass configs defined as an array to `beforeColumnSort` and `afterColumnSort` hooks.
@@ -328,10 +375,12 @@ class ColumnSorting extends BasePlugin {
    */
   getNormalizedSortConfigs(sortConfig = []) {
     if (Array.isArray(sortConfig)) {
-      return sortConfig.slice(0, 1);
+      return JSON.parse(JSON.stringify(sortConfig));
+      // return sortConfig.slice(0, 1);
     }
 
-    return [sortConfig].slice(0, 1);
+    // return [sortConfig].slice(0, 1);
+    return JSON.parse(JSON.stringify([sortConfig]));
   }
 
   /**
@@ -582,7 +631,8 @@ class ColumnSorting extends BasePlugin {
       indexesWithData,
       this.pluginKey,
       arrayMap(sortedColumnsList, physicalColumn => this.columnStatesManager.getSortOrderOfColumn(physicalColumn)),
-      arrayMap(sortedColumnsList, physicalColumn => this.getFirstCellSettings(this.hot.toVisualColumn(physicalColumn)))
+      arrayMap(sortedColumnsList, physicalColumn => this.getFirstCellSettings(this.hot.toVisualColumn(physicalColumn))),
+      arrayMap(sortedColumnsList, physicalColumn => this.columnStatesManager.getIndexOfColumnInSortQueue(physicalColumn)),
     );
 
     // Append spareRows
@@ -851,12 +901,67 @@ class ColumnSorting extends BasePlugin {
 
     if (this.wasClickableHeaderClicked(event, coords.col)) {
       if (isPressedCtrlKey()) {
-        this.hot.deselectCell();
-        this.hot.selectColumns(coords.col);
-      }
+        // this.hot.deselectCell();
+        // this.hot.selectColumns(coords.col);
 
-      this.sort(this.getColumnNextConfig(coords.col));
+        // when pressed allow sorting multiple columns
+
+        const targetColNextSorting = this.getColumnNextConfig(coords.col);
+        const currSortConfig = this.getSortConfig();
+
+        let resultSortConfig;
+
+        if (typeof targetColNextSorting === 'undefined') {
+          // col was desc and we clicked -> make it not sorted
+          // we don't need the visual col index but the index in the sort config (which is in the sort order)!
+          const nthSortedCol = this.columnStatesManager.getIndexOfColumnInSortQueue(coords.col);
+          currSortConfig.splice(nthSortedCol, 1);
+          resultSortConfig = currSortConfig;
+        } else {
+          resultSortConfig = this.mergeSortConfigs(currSortConfig, targetColNextSorting);
+        }
+
+        this.sort(resultSortConfig);
+      } else {
+        this.sort(this.getColumnNextConfig(coords.col));
+      }
     }
+  }
+
+  /**
+   * when we click on a col that was not sorted we just add it to sorting (append)
+   * if the col was already part of the sort state we remove it and append it to the end again
+   *
+   * @param currentAllSortConfig {Array} shape: [{column: number (visual), sortOrder: asc|desc}]
+   * @param targetColNextSorting shape: {column: number (visual), sortOrder: asc|desc}
+   */
+  mergeSortConfigs(currentAllSortConfig, targetColNextSorting) {
+
+    const keys = Object.keys(currentAllSortConfig);
+    // let targetColFound = false;
+    for (let i = 0; i < keys.length; i++) {
+      const colConfig = currentAllSortConfig[keys[i]];
+      if (colConfig.column === targetColNextSorting.column) {
+        // column is already sorted
+        // targetColFound = true;
+
+        if (colConfig.sortOrder === 'asc' && targetColNextSorting.sortOrder === 'desc') {
+          // we only want to toggle the column -> don't start over again with this col
+          currentAllSortConfig[i] = targetColNextSorting;
+          return currentAllSortConfig;
+        }
+
+        currentAllSortConfig.splice(i, 1);
+        break;
+      }
+    }
+
+    // if (!targetColFound) {
+    // not sorted yet, just append
+    currentAllSortConfig.push(targetColNextSorting);
+    // }
+
+    return currentAllSortConfig;
   }
 
   /**

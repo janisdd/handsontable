@@ -13,6 +13,8 @@ const orderToCssClass = new Map([
   [DESC_SORT_STATE, HEADER_CLASS_DESC_SORT]
 ]);
 
+const allCssSortedColumnNames = Array.from({ length: 20 }, (x, i) => `sort-${i + 1}`);
+
 /**
  * Get CSS classes which should be added to particular column header.
  * @param {Object} columnStatesManager Instance of column state manager.
@@ -32,9 +34,11 @@ export function getClassesToAdd(columnStatesManager, column, showSortIndicator, 
     cssClasses.push(HEADER_CLASS_INDICATOR_DISABLED);
 
   } else if (columnStatesManager.isColumnSorted(column)) {
-    const columnOrder = columnStatesManager.getSortOrderOfColumn(column);
+    const columnOrder = columnStatesManager.getSortOrderOfColumn(column); // asc|desc?
+    const columnSortOrder = columnStatesManager.getIndexOfColumnInSortQueue(column); // actual order 1, 2, ..., see multiColumnSort.css
 
     cssClasses.push(orderToCssClass.get(columnOrder));
+    cssClasses.push(`sort-${columnSortOrder + 1}`);
   }
 
   return cssClasses;
@@ -46,5 +50,5 @@ export function getClassesToAdd(columnStatesManager, column, showSortIndicator, 
  * @returns {Array} Array of CSS classes.
  */
 export function getClassedToRemove() {
-  return Array.from(orderToCssClass.values()).concat(HEADER_ACTION_CLASS, HEADER_CLASS_INDICATOR_DISABLED, HEADER_SORT_CLASS);
+  return Array.from(orderToCssClass.values()).concat(HEADER_ACTION_CLASS, HEADER_CLASS_INDICATOR_DISABLED, HEADER_SORT_CLASS).concat(allCssSortedColumnNames);
 }

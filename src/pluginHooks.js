@@ -1264,7 +1264,7 @@ const REGISTERED_HOOKS = [
   'afterColumnResize',
 
   /**
-   * Fired by {@link ManualRowResize} plugin before rendering the table with modified row sizes. This hook is
+   * Fired by {@link MultiColumnSorting2} plugin before rendering the table with modified row sizes. This hook is
    * fired when {@link Options#manualRowResize} option is enabled.
    *
    * @event Hooks#beforeRowResize
@@ -1276,7 +1276,7 @@ const REGISTERED_HOOKS = [
   'beforeRowResize',
 
   /**
-   * Fired by {@link ManualRowResize} plugin after rendering the table with modified row sizes. This hook is
+   * Fired by {@link MultiColumnSorting2} plugin after rendering the table with modified row sizes. This hook is
    * fired when {@link Options#manualRowResize} option is enabled.
    *
    * @event Hooks#afterRowResize

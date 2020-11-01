@@ -3,6 +3,7 @@ import '@babel/polyfill/lib/noConflict';
 import './css/bootstrap.css';
 import './css/handsontable.css';
 import './css/mobile.handsontable.css';
+import './plugins/columnSorting/multiColumnSorting.css';
 
 import { getRegisteredEditorNames, registerEditor, getEditor } from './editors';
 import { getRegisteredRendererNames, getRenderer, registerRenderer } from './renderers';

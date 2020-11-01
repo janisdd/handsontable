@@ -3,7 +3,12 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 **Note that the dist might not be up to date (!!!), you need to run `npm run build` to get the output (`dist/`)**
 
+*For development you can run `build:umd` for faster build times*
+
 Below is a list of changes made to this repo (latest first)
+
+- sort plugin now supports multi column sorting (always enabled)
+  - sue ctrl/cmd to sort by the next column
 
 - fixed issue where `fixedRowsTop` and `fixedColumnsLeft` could not be changed/set after we removed a row/col
 
@@ -13,7 +18,7 @@ Below is a list of changes made to this repo (latest first)
   - current behaviour is - `trimWhitespace: true` then whitespace (and new lines) is collapsed visually and trim is applied after cell edit
   - behaviour after fix is - `trimWhitespace: true` then whitespace (and new lines) is visible and trim is applied after cell edit
   - see https://github.com/handsontable/handsontable/issues/6232#issuecomment-531555056 for some more information
-- added option to `autoColumnSize` Plugin `maxColumnWidth` (number|function) which allows to specify a max width for the very first render
+- added option `autoColumnSize` to Plugin `maxColumnWidth` (number|function) which allows to specify a max width for the very first render
   - usage:
     ```typescript
     let hand = {

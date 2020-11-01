@@ -297,7 +297,7 @@ DefaultSettings.prototype = {
    * (if you want to define row height separately for each row) or a function (if you want to set row height dynamically
    * on each render).
    *
-   * If the {@link ManualRowResize} or {@link AutoRowSize} plugins are enabled, this is also the minimum height that can
+   * If the {@link MultiColumnSorting2} or {@link AutoRowSize} plugins are enabled, this is also the minimum height that can
    * be set via either of those two plugins.
    *
    * Height should be equal or greater than 23px. Table is rendered incorrectly if height is less than 23px.

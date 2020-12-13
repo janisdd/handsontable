@@ -134,7 +134,7 @@ class AutoColumnSize extends BasePlugin {
      */
     this.inProgress = false;
 
-    // moved to constructor to allow auto-sizing the columns when the plugin is disabled
+    // we need this for width calculation when resizing the col via double click (ManualColumnResize)
     this.addHook('beforeColumnResize', (col, size, isDblClick) => this.onBeforeColumnResize(col, size, isDblClick));
 
     /**
@@ -203,6 +203,12 @@ class AutoColumnSize extends BasePlugin {
    */
   disablePlugin() {
     super.disablePlugin();
+
+    // we need this because after we removed all hooks 'beforeColumnResize' is not longer active (skipped)
+    // but above we register this only once so we cannot longer enable it...
+    // we need this for width calculation when resizing the col via double click (ManualColumnResize)
+    this.addHook('beforeColumnResize',
+      (size, column, isDblClick) => this.onBeforeColumnResize(size, column, isDblClick));
   }
 
   /**

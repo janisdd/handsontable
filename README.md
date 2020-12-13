@@ -7,6 +7,8 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- autoColumnSize doube click auto resize now works properly even if the plugin is disabled
+
 - sort plugin now supports multi column sorting (always enabled)
   - sue ctrl/cmd to sort by the next column
 

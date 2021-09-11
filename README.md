@@ -7,6 +7,13 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- when a cell is selected (not focused, no cursor) and we start typing the cell content is cleared
+  - however, when we input a non-printable character (e.g. AudioVolumeMute, LaunchApplication1, ... see editorManager.js for all) the cell content is cleared but no character is entered
+  - we cancel content clear for these keyCodes: AudioVolumeMute, AudioVolumeDown, AudioVolumeUp, LaunchMediaPlayer, LaunchApplication1, LaunchApplication2, num lock, scroll lock, pause/break
+  - we don't use `isPrintableChar` in case it misses some (other language) keys
+  - when starting a composed character we only clear the cell after the second key press
+    - `^ + a` will clear the cell and input `â` but not `^`
+
 - autoColumnSize doube click auto resize now works properly even if the plugin is disabled
 
 - sort plugin now supports multi column sorting (always enabled)

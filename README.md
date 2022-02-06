@@ -7,6 +7,9 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- fixed issue when pasting table data from excel/libreoffice/openoffice
+  - e.g. pasting from excel introduced line breaks because table styling but was not removed
+  - see `src/plugins/copyPaste/utils.js > tableToArray` (mostly from handsontable update)
 - when a cell is selected (not focused, no cursor) and we start typing the cell content is cleared
   - however, when we input a non-printable character (e.g. AudioVolumeMute, LaunchApplication1, ... see editorManager.js for all) the cell content is cleared but no character is entered
   - we cancel content clear for these keyCodes: AudioVolumeMute, AudioVolumeDown, AudioVolumeUp, LaunchMediaPlayer, LaunchApplication1, LaunchApplication2, num lock, scroll lock, pause/break
@@ -33,8 +36,8 @@ Below is a list of changes made to this repo (latest first)
     let hand = {
       autoColumnSize: {
         maxColumnWidth: function(columnIndex: number, column_width: number) {
-          # columnIndex is visual or physical?? probably visual TODO
-          # you can return a new width here...
+          // columnIndex is visual or physical?? probably visual TODO
+          // you can return a new width here...
         }
       }
     }

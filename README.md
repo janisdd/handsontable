@@ -7,6 +7,18 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- we no longer push dist to github... to reduce overhead
+- added setting for copyPaste plugin: `pasteSeparatorMode`
+  - with the options `"normal" | "ignoreRowSeparators" | "ignoreColumnSeparators" | "ignoreAllSeparators"`
+  - this will re-join the cells after processing
+    - this means sheet.js processing is applied and splits the cells, we join them again
+  - `normal`: all separators are applied (what one would expect)
+  - `onlyKeepColumnSeparators`: we only keep columns (ignore row separators) (1 row)
+  - `onlyKeepRowSeparators`: we only keep rows (ignore column separators) (with 1 column)
+  - `ignoreAllSeparators`: everything will be pasted into one cell
+  - added setting `pasteRowSeparator`: which is used to combine the rows again
+  - added setting `pasteColumnSeparator`: which is used to combine the columns again
+
 - fixed issue when pasting table data from excel/libreoffice/openoffice
   - e.g. pasting from excel introduced line breaks because table styling but was not removed
   - see `src/plugins/copyPaste/utils.js > tableToArray` (mostly from handsontable update)

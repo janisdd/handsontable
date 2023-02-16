@@ -7,7 +7,10 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
-- we no longer push dist to github... to reduce overhead
+- added setting for autoColumnSize plugin: `ignoreCellWidthFunc` (null or function),
+  - function takes the cell value (string) and returns true: cell should be ignored (width), false: not
+  - instance of `this` is not specified (could be handsontable this or caller this... [not tested])
+- **we no longer push dist to github... to reduce overhead**
 - added setting for copyPaste plugin: `pasteSeparatorMode`
   - with the options `"normal" | "ignoreRowSeparators" | "ignoreColumnSeparators" | "ignoreAllSeparators"`
   - this will re-join the cells after processing

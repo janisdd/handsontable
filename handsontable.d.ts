@@ -629,6 +629,8 @@ declare namespace Handsontable {
       samplesGenerator: SamplesGenerator;
       widths: any[];
 
+      ignoreCellWidthFunc: null | (value: string) => boolean;
+
       calculateAllColumnsWidth(rowRange?: number | object): void;
       calculateColumnsWidth(colRange?: number | object, rowRange?: number | object, force?: boolean): void;
       clearCache(columns?: any[]): void;
@@ -785,6 +787,10 @@ declare namespace Handsontable {
       pasteMode: PasteModeType;
       rowsLimit: number;
       focusableElement: FocusableWrapper;
+
+      pasteSeparatorMode: "normal" | "onlyKeepRowSeparators" | "onlyKeepColumnSeparators" | "ignoreAllSeparators"
+      pasteRowJoinSeparator: string | '\n';
+      pasteColumnJoinSeparator: string| '\t';
 
       setCopyableText(): void;
       getRangedCopyableData(ranges: RangeType[]): string;

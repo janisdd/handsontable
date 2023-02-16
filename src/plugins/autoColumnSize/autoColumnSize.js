@@ -81,6 +81,12 @@ class AutoColumnSize extends BasePlugin {
      * @type {Number[]}
      */
     this.widths = [];
+
+    /**
+     * used to ignore cell widths of comment cells
+     * @type {(cellValue) => boolean}
+     */
+    this.ignoreCellWidthFunc = null;
     /**
      * Instance of {@link GhostTable} for rows and columns size calculations.
      *
@@ -173,7 +179,7 @@ class AutoColumnSize extends BasePlugin {
 
     if (setting && setting.maxColumnWidth !== null && setting.maxColumnWidth !== void 0 &&
       (typeof setting.maxColumnWidth === 'function' || typeof setting.maxColumnWidth === 'number')) {
-      this.maxColumnWidth = setting.maxColumnWidth
+      this.maxColumnWidth = setting.maxColumnWidth;
     }
 
     this.setSamplingOptions();
@@ -224,7 +230,34 @@ class AutoColumnSize extends BasePlugin {
 
     rangeEach(columnsRange.from, columnsRange.to, (col) => {
       if (force || (this.widths[col] === void 0 && !this.hot._getColWidthFromSettings(col))) {
+        // samples is a map with one entry for every requested col (only one in this case), key is the column index, e.g. { 0 => ...}
+        // value is also a map with entries: { key: char count => {needed: 1, strings: [...]}}
+        // needed use by handsontable to track how many more samples are needed (decreased by 1 for each sample, initial value is 3)
+        // strings are the samples strings from the real table... in the format {value: string, row: 0-based index }
         const samples = this.samplesGenerator.generateColumnSamples(col, rowsRange);
+
+        if (this.ignoreCellWidthFunc) {
+          samples.forEach((sample) => {
+            sample.forEach((obj, lengthInChars) => {
+
+              for (let i = 0; i < obj.strings.length; i++) {
+                const stringObj = obj.strings[i];
+                const ignoreCellWidth = this.ignoreCellWidthFunc(stringObj.value);
+
+                if (ignoreCellWidth) {
+                  obj.strings.splice(i, 1);
+                  // eslint-disable-next-line no-plusplus
+                  i--;
+                }
+              }
+
+              if (obj.strings.length === 0) {
+                sample.delete(lengthInChars);
+              }
+
+            });
+          });
+        }
 
         arrayEach(samples, ([column, sample]) => this.ghostTable.addColumn(column, sample));
       }

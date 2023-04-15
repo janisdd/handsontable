@@ -141,7 +141,12 @@ class AutoColumnSize extends BasePlugin {
     this.inProgress = false;
 
     // we need this for width calculation when resizing the col via double click (ManualColumnResize)
-    this.addHook('beforeColumnResize', (col, size, isDblClick) => this.onBeforeColumnResize(col, size, isDblClick));
+    // this.addHook('beforeColumnResize', (col, size, isDblClick) => this.onBeforeColumnResize(col, size, isDblClick));
+    // we need a func reference because hook handler works with indexOf(callback) -> use references
+    // when we enable the plugin and add the hook it also checks for references and re-uses hooks (to keep order)
+    // this.addHook('beforeColumnResize', this.onBeforeColumnResize);
+
+    this.onBeforeColumnResizeBound = this.onBeforeColumnResize.bind(this);
 
     /**
      * number for the max initial (only on first render) column width or
@@ -184,6 +189,9 @@ class AutoColumnSize extends BasePlugin {
 
     this.setSamplingOptions();
 
+    // we need a func reference because hook handler works with indexOf(callback) -> use references
+    // when we enable the plugin and add the hook it also checks for references and re-uses hooks (to keep order)
+    this.addHook('beforeColumnResize', this.onBeforeColumnResizeBound);
     this.addHook('afterLoadData', () => this.onAfterLoadData());
     this.addHook('beforeChange', changes => this.onBeforeChange(changes));
     this.addHook('beforeRender', force => this.onBeforeRender(force));
@@ -210,11 +218,11 @@ class AutoColumnSize extends BasePlugin {
   disablePlugin() {
     super.disablePlugin();
 
-    // we need this because after we removed all hooks 'beforeColumnResize' is not longer active (skipped)
+    // we need this because after we removed all hooks 'beforeColumnResize' is no longer active (skipped)
     // but above we register this only once so we cannot longer enable it...
     // we need this for width calculation when resizing the col via double click (ManualColumnResize)
-    this.addHook('beforeColumnResize',
-      (size, column, isDblClick) => this.onBeforeColumnResize(size, column, isDblClick));
+    // this.addHook('beforeColumnResize',
+    //   (size, column, isDblClick) => this.onBeforeColumnResize(size, column, isDblClick));
   }
 
   /**

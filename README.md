@@ -7,6 +7,11 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- (6.5.1): fixed an issue where disabling autoColumnSize and manualColumnSize Plugins would add more and more callbacks (other methods than `onBeforeColumnResize` still do that but not that important)
+  - this was critical because this would only skip prior registered callbacks
+  - which means that user handlers would eventually be the first callback that is run... but we need to old column size (which we only get when autoColumnSize Plugin's callback is called first)
+  - solved by passing reference to the `addHook` methods (which will `unskip` the methods when re-adding)
+  - however, now we need to re-enable the `AutoColumnPlugin` every time the hot settings are updated!
 - added setting for autoColumnSize plugin: `ignoreCellWidthFunc` (null or function),
   - function takes the cell value (string) and returns true: cell should be ignored (width), false: not
   - instance of `this` is not specified (could be handsontable this or caller this... [not tested])

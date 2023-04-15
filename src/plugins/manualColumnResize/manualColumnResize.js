@@ -39,6 +39,8 @@ class ManualColumnResize extends BasePlugin {
     this.autoresizeTimeout = null;
     this.manualColumnWidths = [];
 
+    this.onBeforeColumnResizeBound = this.onBeforeColumnResize.bind(this);
+
     addClass(this.handle, 'manualColumnResizer');
     addClass(this.guide, 'manualColumnResizerGuide');
   }
@@ -67,7 +69,10 @@ class ManualColumnResize extends BasePlugin {
 
     this.addHook('modifyColWidth', (width, col) => this.onModifyColWidth(width, col));
     this.addHook('beforeStretchingColumnWidth', (stretchedWidth, column) => this.onBeforeStretchingColumnWidth(stretchedWidth, column));
-    this.addHook('beforeColumnResize', (currentColumn, newSize, isDoubleClick) => this.onBeforeColumnResize(currentColumn, newSize, isDoubleClick));
+    // we need a func reference because hook handler works with indexOf(callback) -> use references
+    // when we enable the plugin and add the hook it also checks for references and re-uses hooks (to keep order)
+    // this.addHook('beforeColumnResize', (currentColumn, newSize, isDoubleClick) => this.onBeforeColumnResize(currentColumn, newSize, isDoubleClick));
+    this.addHook('beforeColumnResize', this.onBeforeColumnResizeBound);
 
     if (typeof loadedManualColumnWidths !== 'undefined') {
       this.manualColumnWidths = loadedManualColumnWidths;

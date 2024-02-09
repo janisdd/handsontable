@@ -2751,12 +2751,17 @@ export default function Core(rootElement, userSettings, rootInstanceSymbol = fal
    * @returns {Number}
    */
   this._getColWidthFromSettings = function(col) {
-    const cellProperties = instance.getCellMeta(0, col);
-    let width = cellProperties.width;
+    // const cellProperties = instance.getCellMeta(0, col);
+    // let width = cellProperties.width;
+    //
+    // if (width === void 0 || width === priv.settings.width) {
+    //   width = cellProperties.colWidths;
+    // }
 
-    if (width === void 0 || width === priv.settings.width) {
-      width = cellProperties.colWidths;
-    }
+    //we need to comment the above out because else we use cached values from cellProperties
+    //this means the settings function is only evaluated once
+    let width = priv.settings.colWidths;
+
     if (width !== void 0 && width !== null) {
       switch (typeof width) {
         case 'object': // array

@@ -461,7 +461,9 @@ class ManualColumnResize extends BasePlugin {
    * @returns {Number} Returns new width.
    */
   setManualSize(column, width) {
-    const newWidth = Math.max(width, 20);
+    // no max, as we want to use this also for hiding columns
+    // const newWidth = Math.max(width, 20);
+    const newWidth = width;
 
     /**
      *  We need to run col through modifyCol hook, in case the order of displayed columns is different than the order

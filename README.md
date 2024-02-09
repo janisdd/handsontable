@@ -7,6 +7,12 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- (6.5.2)
+  -  the `autoColumnSize` plugin is no longer disabled when handsontable `colWidths` setting is used
+    - though I don't use `colWidths` really, only to hide columns, for column sizes I use the `manualColumnResize` plugin
+    - removed the minimum size for the  `manualColumnResize` plugin (to be able to hide columns)
+    - changed `core.js > _getColWidthFromSettings` to do the same thing as the rows... (prevented something for hiding columns feature)
+
 - (6.5.1): fixed an issue where disabling autoColumnSize and manualColumnSize Plugins would add more and more callbacks (other methods than `onBeforeColumnResize` still do that but not that important)
   - this was critical because this would only skip prior registered callbacks
   - which means that user handlers would eventually be the first callback that is run... but we need to old column size (which we only get when autoColumnSize Plugin's callback is called first)

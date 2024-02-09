@@ -165,7 +165,10 @@ class AutoColumnSize extends BasePlugin {
    * @returns {Boolean}
    */
   isEnabled() {
-    return this.hot.getSettings().autoColumnSize !== false && !this.hot.getSettings().colWidths;
+    // seems like a bug in handsontable, not even fixed in 14.1.0
+    // return this.hot.getSettings().autoColumnSize !== false && !this.hot.getSettings().colWidths;
+
+    return this.hot.getSettings().autoColumnSize === true || isObject(this.hot.getSettings().autoColumnSize)
   }
 
   /**

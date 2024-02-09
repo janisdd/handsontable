@@ -841,6 +841,11 @@ export default function Core(rootElement, userSettings, rootInstanceSymbol = fal
 
     this.forceFullRender = true; // used when data was changed
 
+    // true: pause keyDown handlers, false: normal
+    // this is faster than listen/unlisten and doesn't trigger hooks
+    // this can also be set before this file's `onKeyDown` continues execution (to intercept key events)
+    this._isListeningPaused = false
+
     instance.runHooks('init');
     this.view.render();
 
@@ -1232,6 +1237,22 @@ export default function Core(rootElement, userSettings, rootInstanceSymbol = fal
    */
   this.isListening = function() {
     return activeGuid === instance.guid;
+  };
+
+  /**
+   * returns if the listening for `keyDown` events is paused
+   * extra layer between isListening
+   * @returns {boolean|*}
+   */
+  this.isListeningPaused = function() {
+    return instance._isListeningPaused
+  };
+  /**
+   * sets the listening for keyDown events to paused
+   * @param paused
+   */
+  this.setListeningPaused = function(paused) {
+    instance._isListeningPaused = paused
   };
 
   /**

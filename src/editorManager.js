@@ -64,6 +64,11 @@ function EditorManager(instance, priv, selection) {
     }
     instance.runHooks('beforeKeyDown', event);
 
+    // could be changed inside `beforeKeyDown`
+    if (instance.isListeningPaused()) {
+      return;
+    }
+
     if (event.keyCode === 27 || event.keyCode === 13) { // esc | enter
       isCurrentlyComposing = false;
     }

@@ -7,6 +7,18 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- (6.5.3)
+  - added functions to hot instance: `isListeningPaused(): bool`, `setListeningPaused(bool)`
+    - can be used to pause listening for `keyDown` events
+      - this is checked before the rest of `editorManager > onKeyDown` is run, so the instance hook `beforeKeyDown` can set this to prevent, e.g., start editing the cells
+      - to undo this after the key press use this pattern:
+    ```js
+    hot.setListeningPaused(true)
+    setTimeout(() => {
+      hot.setListeningPaused(false)
+    }, 0)
+    ```
+
 - (6.5.2)
   -  the `autoColumnSize` plugin is no longer disabled when handsontable `colWidths` setting is used
     - though I don't use `colWidths` really, only to hide columns, for column sizes I use the `manualColumnResize` plugin

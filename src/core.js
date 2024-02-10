@@ -1236,7 +1236,7 @@ export default function Core(rootElement, userSettings, rootInstanceSymbol = fal
    * @returns {Boolean} `true` if the instance is listening, `false` otherwise.
    */
   this.isListening = function() {
-    return activeGuid === instance.guid;
+    return activeGuid === instance.guid && !instance.isListeningPaused();
   };
 
   /**

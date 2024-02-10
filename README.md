@@ -18,6 +18,7 @@ Below is a list of changes made to this repo (latest first)
       hot.setListeningPaused(false)
     }, 0)
     ```
+    - `[hot instance].isListening` now also checks `isListeningPaused`
 
 - (6.5.2)
   -  the `autoColumnSize` plugin is no longer disabled when handsontable `colWidths` setting is used

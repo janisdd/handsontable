@@ -41,6 +41,12 @@ class Autofill extends BasePlugin {
      * @type {Boolean}
      */
     this.addingStarted = false;
+
+    /**
+     * the function used to fill data
+     * @type {null | (data: string[], targetCount: number) => string[]}
+     */
+    this.fillFunc = null;
     /**
      * Specifies if there was mouse down on the cell corner.
      *
@@ -122,6 +128,14 @@ class Autofill extends BasePlugin {
   }
 
   /**
+   * sets the function to fill data
+   * @param fillFunc
+   */
+  setFillFunction(fillFunc) {
+    this.fillFunc = fillFunc;
+  }
+
+  /**
    * Gets selection data
    *
    * @private
@@ -167,6 +181,61 @@ class Autofill extends BasePlugin {
       const deltas = getDeltas(startOfDragCoords, endOfDragCoords, selectionData, directionOfDrag);
       let fillData = selectionData;
 
+      const isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
+
+      if (isFillColumn) {
+        const dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
+        // fill columns (vertical)
+        const len = selectionData.length;
+        const numColumns = selectionData[0].length;
+        // every column data as an array
+
+        while (dragLength > fillData.length) {
+          fillData.push(Array(numColumns).fill(''));
+        }
+
+        for (let _col = 0; _col < numColumns; _col++) {
+          let _fillData = [];
+          for (let _row = 0; _row < len; _row++) {
+            _fillData.push(selectionData[_row][_col]);
+          }
+
+          const _preFillData = this._fillSingleLine(_fillData, dragLength);
+
+          for (let _row = 0; _row < dragLength; _row++) {
+            fillData[_row][_col] = _preFillData[_row];
+          }
+        }
+
+      } else {
+        // fill rows (horizontal)
+        const dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
+        const len = selectionData[0].length;
+        const numRows = selectionData.length;
+        // every row data as an array
+
+        if (dragLength > len) {
+          for (let i = 0; i < numRows; i++) {
+            fillData[i].push(...Array(dragLength - len).fill(''));
+          }
+        }
+
+        for (let _row = 0; _row < numRows; _row++) {
+          let _fillData = [];
+
+          for (let _col = 0; _col < len; _col++) {
+            _fillData.push(selectionData[_row][_col]);
+          }
+
+          const _preFillData = this._fillSingleLine(_fillData, dragLength);
+
+          for (let _col = 0; _col < dragLength; _col++) {
+            fillData[_row][_col] = _preFillData[_col];
+          }
+        }
+      }
+
+      // this seems to work because fillData = selectionData and we modified it in place
       if (['up', 'left'].indexOf(directionOfDrag) > -1) {
         fillData = [];
 
@@ -203,7 +272,7 @@ class Autofill extends BasePlugin {
         `${this.pluginName}.fill`,
         null,
         directionOfDrag,
-        deltas
+        deltas // only important if cell value is numeric
       );
 
       this.setSelection(cornersOfSelectionAndDragAreas);
@@ -214,6 +283,19 @@ class Autofill extends BasePlugin {
     }
 
     return true;
+  }
+
+  /**
+   *
+   * @param {Array<any>} data
+   * @param {number} targetCount
+   * @private
+   * @return {Array<any>} filled line data
+   */
+  _fillSingleLine(data, targetCount) {
+    if (!this.fillFunc) return data;
+
+    return this.fillFunc(data, targetCount);
   }
 
   /**

@@ -672,6 +672,7 @@ declare namespace Handsontable {
       handleDraggedCells: number;
       mouseDownOnCellCorner: boolean;
       mouseDragOutside: boolean;
+      setFillFunction: null | ((data: string[], targetCount: number) => string[]);
     }
 
     interface BindRowsWithHeaders extends Base {

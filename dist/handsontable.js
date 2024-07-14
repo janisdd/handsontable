@@ -23,8 +23,8 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
- * Version: 6.4.4
- * Release date: 19/12/2018 (built at 06/02/2022 13:06:54)
+ * Version: 6.5.3
+ * Release date: 19/12/2018 (built at 14/07/2024 19:42:38)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -12306,7 +12306,11 @@ function Core(rootElement, userSettings) {
     this.view = new _tableView.default(this);
     editorManager = _editorManager.default.getInstance(instance, priv, selection, datamap);
     this.forceFullRender = true; // used when data was changed
+    // true: pause keyDown handlers, false: normal
+    // this is faster than listen/unlisten and doesn't trigger hooks
+    // this can also be set before this file's `onKeyDown` continues execution (to intercept key events)
 
+    this._isListeningPaused = false;
     instance.runHooks('init');
     this.view.render();
 
@@ -12715,7 +12719,26 @@ function Core(rootElement, userSettings) {
 
 
   this.isListening = function () {
-    return activeGuid === instance.guid;
+    return activeGuid === instance.guid && !instance.isListeningPaused();
+  };
+  /**
+   * returns if the listening for `keyDown` events is paused
+   * extra layer between isListening
+   * @returns {boolean|*}
+   */
+
+
+  this.isListeningPaused = function () {
+    return instance._isListeningPaused;
+  };
+  /**
+   * sets the listening for keyDown events to paused
+   * @param paused
+   */
+
+
+  this.setListeningPaused = function (paused) {
+    instance._isListeningPaused = paused;
   };
   /**
    * Destroys the current editor, render the table and prepares the editor of the newly selected cell.
@@ -14339,12 +14362,15 @@ function Core(rootElement, userSettings) {
 
 
   this._getColWidthFromSettings = function (col) {
-    var cellProperties = instance.getCellMeta(0, col);
-    var width = cellProperties.width;
-
-    if (width === void 0 || width === priv.settings.width) {
-      width = cellProperties.colWidths;
-    }
+    // const cellProperties = instance.getCellMeta(0, col);
+    // let width = cellProperties.width;
+    //
+    // if (width === void 0 || width === priv.settings.width) {
+    //   width = cellProperties.colWidths;
+    // }
+    //we need to comment the above out because else we use cached values from cellProperties
+    //this means the settings function is only evaluated once
+    var width = priv.settings.colWidths;
 
     if (width !== void 0 && width !== null) {
       switch (_typeof(width)) {
@@ -29737,9 +29763,9 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "06/02/2022 13:06:54";
+Handsontable.buildDate = "14/07/2024 19:42:38";
 Handsontable.packageName = "handsontable";
-Handsontable.version = "6.4.4";
+Handsontable.version = "6.5.3";
 var baseVersion = "";
 
 if (baseVersion) {
@@ -39759,7 +39785,11 @@ function EditorManager(instance, priv, selection) {
       return;
     }
 
-    instance.runHooks('beforeKeyDown', event);
+    instance.runHooks('beforeKeyDown', event); // could be changed inside `beforeKeyDown`
+
+    if (instance.isListeningPaused()) {
+      return;
+    }
 
     if (event.keyCode === 27 || event.keyCode === 13) {
       // esc | enter
@@ -43263,6 +43293,12 @@ function (_BasePlugin) {
 
     _this.widths = [];
     /**
+     * used to ignore cell widths of comment cells
+     * @type {(cellValue) => boolean}
+     */
+
+    _this.ignoreCellWidthFunc = null;
+    /**
      * Instance of {@link GhostTable} for rows and columns size calculations.
      *
      * @private
@@ -43323,10 +43359,12 @@ function (_BasePlugin) {
      */
 
     _this.inProgress = false; // we need this for width calculation when resizing the col via double click (ManualColumnResize)
+    // this.addHook('beforeColumnResize', (col, size, isDblClick) => this.onBeforeColumnResize(col, size, isDblClick));
+    // we need a func reference because hook handler works with indexOf(callback) -> use references
+    // when we enable the plugin and add the hook it also checks for references and re-uses hooks (to keep order)
+    // this.addHook('beforeColumnResize', this.onBeforeColumnResize);
 
-    _this.addHook('beforeColumnResize', function (col, size, isDblClick) {
-      return _this.onBeforeColumnResize(col, size, isDblClick);
-    });
+    _this.onBeforeColumnResizeBound = _this.onBeforeColumnResize.bind(_assertThisInitialized(_assertThisInitialized(_this)));
     /**
      * number for the max initial (only on first render) column width or
      * a function arguments: column index, column width, returns: new column width
@@ -43334,7 +43372,6 @@ function (_BasePlugin) {
      * you need to set the in the handsontable cosntructor else this setting has no effect
      * set it via instance = {... autoColumnSize: { maxColumnWidth: function() {...}}}
      */
-
 
     _this.maxColumnWidth = void 0;
     return _this;
@@ -43350,7 +43387,9 @@ function (_BasePlugin) {
   _createClass(AutoColumnSize, [{
     key: "isEnabled",
     value: function isEnabled() {
-      return this.hot.getSettings().autoColumnSize !== false && !this.hot.getSettings().colWidths;
+      // seems like a bug in handsontable, not even fixed in 14.1.0
+      // return this.hot.getSettings().autoColumnSize !== false && !this.hot.getSettings().colWidths;
+      return this.hot.getSettings().autoColumnSize === true || (0, _object.isObject)(this.hot.getSettings().autoColumnSize);
     }
     /**
      * Enables the plugin functionality for this Handsontable instance.
@@ -43375,7 +43414,10 @@ function (_BasePlugin) {
         this.maxColumnWidth = setting.maxColumnWidth;
       }
 
-      this.setSamplingOptions();
+      this.setSamplingOptions(); // we need a func reference because hook handler works with indexOf(callback) -> use references
+      // when we enable the plugin and add the hook it also checks for references and re-uses hooks (to keep order)
+
+      this.addHook('beforeColumnResize', this.onBeforeColumnResizeBound);
       this.addHook('afterLoadData', function () {
         return _this2.onAfterLoadData();
       });
@@ -43416,16 +43458,12 @@ function (_BasePlugin) {
   }, {
     key: "disablePlugin",
     value: function disablePlugin() {
-      var _this3 = this;
-
-      _get(_getPrototypeOf(AutoColumnSize.prototype), "disablePlugin", this).call(this); // we need this because after we removed all hooks 'beforeColumnResize' is not longer active (skipped)
+      _get(_getPrototypeOf(AutoColumnSize.prototype), "disablePlugin", this).call(this); // we need this because after we removed all hooks 'beforeColumnResize' is no longer active (skipped)
       // but above we register this only once so we cannot longer enable it...
       // we need this for width calculation when resizing the col via double click (ManualColumnResize)
+      // this.addHook('beforeColumnResize',
+      //   (size, column, isDblClick) => this.onBeforeColumnResize(size, column, isDblClick));
 
-
-      this.addHook('beforeColumnResize', function (size, column, isDblClick) {
-        return _this3.onBeforeColumnResize(size, column, isDblClick);
-      });
     }
     /**
      * Calculates a columns width.
@@ -43438,7 +43476,7 @@ function (_BasePlugin) {
   }, {
     key: "calculateColumnsWidth",
     value: function calculateColumnsWidth() {
-      var _this4 = this;
+      var _this3 = this;
 
       var colRange = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
         from: 0,
@@ -43458,22 +43496,48 @@ function (_BasePlugin) {
         to: rowRange
       } : rowRange;
       (0, _number.rangeEach)(columnsRange.from, columnsRange.to, function (col) {
-        if (force || _this4.widths[col] === void 0 && !_this4.hot._getColWidthFromSettings(col)) {
-          var samples = _this4.samplesGenerator.generateColumnSamples(col, rowsRange);
+        if (force || _this3.widths[col] === void 0 && !_this3.hot._getColWidthFromSettings(col)) {
+          // samples is a map with one entry for every requested col (only one in this case), key is the column index, e.g. { 0 => ...}
+          // value is also a map with entries: { key: char count => {needed: 1, strings: [...]}}
+          // needed use by handsontable to track how many more samples are needed (decreased by 1 for each sample, initial value is 3)
+          // strings are the samples strings from the real table... in the format {value: string, row: 0-based index }
+          var samples = _this3.samplesGenerator.generateColumnSamples(col, rowsRange);
+
+          if (_this3.ignoreCellWidthFunc) {
+            samples.forEach(function (sample) {
+              sample.forEach(function (obj, lengthInChars) {
+                for (var i = 0; i < obj.strings.length; i++) {
+                  var stringObj = obj.strings[i];
+
+                  var ignoreCellWidth = _this3.ignoreCellWidthFunc(stringObj.value);
+
+                  if (ignoreCellWidth) {
+                    obj.strings.splice(i, 1); // eslint-disable-next-line no-plusplus
+
+                    i--;
+                  }
+                }
+
+                if (obj.strings.length === 0) {
+                  sample.delete(lengthInChars);
+                }
+              });
+            });
+          }
 
           (0, _array.arrayEach)(samples, function (_ref) {
             var _ref2 = _slicedToArray(_ref, 2),
                 column = _ref2[0],
                 sample = _ref2[1];
 
-            return _this4.ghostTable.addColumn(column, sample);
+            return _this3.ghostTable.addColumn(column, sample);
           });
         }
       });
 
       if (this.ghostTable.columns.length) {
         this.ghostTable.getWidths(function (col, width) {
-          _this4.widths[col] = width;
+          _this3.widths[col] = width;
         });
         this.ghostTable.clean();
       }
@@ -43488,7 +43552,7 @@ function (_BasePlugin) {
   }, {
     key: "calculateAllColumnsWidth",
     value: function calculateAllColumnsWidth() {
-      var _this5 = this;
+      var _this4 = this;
 
       var rowRange = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
         from: 0,
@@ -43501,13 +43565,13 @@ function (_BasePlugin) {
 
       var loop = function loop() {
         // When hot was destroyed after calculating finished cancel frame
-        if (!_this5.hot) {
+        if (!_this4.hot) {
           (0, _feature.cancelAnimationFrame)(timer);
-          _this5.inProgress = false;
+          _this4.inProgress = false;
           return;
         }
 
-        _this5.calculateColumnsWidth({
+        _this4.calculateColumnsWidth({
           from: current,
           to: Math.min(current + AutoColumnSize.CALCULATION_STEP, length)
         }, rowRange);
@@ -43518,13 +43582,13 @@ function (_BasePlugin) {
           timer = (0, _feature.requestAnimationFrame)(loop);
         } else {
           (0, _feature.cancelAnimationFrame)(timer);
-          _this5.inProgress = false; // @TODO Should call once per render cycle, currently fired separately in different plugins
+          _this4.inProgress = false; // @TODO Should call once per render cycle, currently fired separately in different plugins
 
-          _this5.hot.view.wt.wtOverlays.adjustElementsSize(true); // tmp
+          _this4.hot.view.wt.wtOverlays.adjustElementsSize(true); // tmp
 
 
-          if (_this5.hot.view.wt.wtOverlays.leftOverlay.needFullRender) {
-            _this5.hot.view.wt.wtOverlays.leftOverlay.clone.draw();
+          if (_this4.hot.view.wt.wtOverlays.leftOverlay.needFullRender) {
+            _this4.hot.view.wt.wtOverlays.leftOverlay.clone.draw();
           }
         }
       };
@@ -43730,13 +43794,13 @@ function (_BasePlugin) {
   }, {
     key: "clearCache",
     value: function clearCache() {
-      var _this6 = this;
+      var _this5 = this;
 
       var columns = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
 
       if (columns.length) {
         (0, _array.arrayEach)(columns, function (physicalIndex) {
-          _this6.widths[physicalIndex] = void 0;
+          _this5.widths[physicalIndex] = void 0;
         });
       } else {
         this.widths.length = 0;
@@ -43796,15 +43860,15 @@ function (_BasePlugin) {
   }, {
     key: "onAfterLoadData",
     value: function onAfterLoadData() {
-      var _this7 = this;
+      var _this6 = this;
 
       if (this.hot.view) {
         this.recalculateAllColumnsWidth();
       } else {
         // first load - initialization
         setTimeout(function () {
-          if (_this7.hot) {
-            _this7.recalculateAllColumnsWidth();
+          if (_this6.hot) {
+            _this6.recalculateAllColumnsWidth();
           }
         }, 0);
       }
@@ -43819,13 +43883,13 @@ function (_BasePlugin) {
   }, {
     key: "onBeforeChange",
     value: function onBeforeChange(changes) {
-      var _this8 = this;
+      var _this7 = this;
 
       var changedColumns = (0, _array.arrayMap)(changes, function (_ref3) {
         var _ref4 = _slicedToArray(_ref3, 2),
             column = _ref4[1];
 
-        return _this8.hot.propToCol(column);
+        return _this7.hot.propToCol(column);
       });
       this.clearCache(changedColumns);
     }
@@ -43956,6 +44020,8 @@ var INTERVAL_FOR_ADDING_ROW = 200;
  * @plugin Autofill
  */
 
+/* eslint-disable */
+
 var Autofill =
 /*#__PURE__*/
 function (_BasePlugin) {
@@ -43983,6 +44049,12 @@ function (_BasePlugin) {
      */
 
     _this.addingStarted = false;
+    /**
+     * the function used to fill data
+     * @type {null | (data: string[], requestedCount: number) => string[]}
+     */
+
+    _this.fillFunc = null;
     /**
      * Specifies if there was mouse down on the cell corner.
      *
@@ -44087,6 +44159,16 @@ function (_BasePlugin) {
       _get(_getPrototypeOf(Autofill.prototype), "disablePlugin", this).call(this);
     }
     /**
+     * sets the function to fill data
+     * @param fillFunc
+     */
+
+  }, {
+    key: "setFillFunction",
+    value: function setFillFunction(fillFunc) {
+      this.fillFunc = fillFunc;
+    }
+    /**
      * Gets selection data
      *
      * @private
@@ -44134,34 +44216,91 @@ function (_BasePlugin) {
         this.hot.runHooks('beforeAutofill', startOfDragCoords, endOfDragCoords, selectionData);
         var deltas = (0, _utils.getDeltas)(startOfDragCoords, endOfDragCoords, selectionData, directionOfDrag);
         var fillData = selectionData;
+        var isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
+
+        if (isFillColumn) {
+          debugger;
+          var dragLength = endOfDragCoords.row - startOfDragCoords.row + 1; // fill columns (vertical)
+
+          var len = selectionData.length;
+          var numColumns = selectionData[0].length; // every column data as an array
+
+          while (dragLength > fillData.length) {
+            fillData.push(Array(numColumns).fill(''));
+          }
+
+          for (var _col = 0; _col < numColumns; _col++) {
+            var _fillData = [];
+
+            for (var _row = 0; _row < len; _row++) {
+              _fillData.push(selectionData[_row][_col]);
+            }
+
+            var _preFillData = this._fillSingleLine(_fillData, dragLength);
+
+            for (var _row2 = 0; _row2 < dragLength; _row2++) {
+              fillData[_row2][_col] = _preFillData[_row2];
+            }
+          }
+        } else {
+          // fill rows (horizontal)
+          var _dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
+
+          var _len = selectionData[0].length;
+          var numRows = selectionData.length; // every row data as an array
+
+          if (_dragLength > _len) {
+            for (var i = 0; i < numRows; i++) {
+              var _fillData$i;
+
+              (_fillData$i = fillData[i]).push.apply(_fillData$i, _toConsumableArray(Array(_dragLength - _len).fill('')));
+            }
+          }
+
+          for (var _row3 = 0; _row3 < numRows; _row3++) {
+            var _fillData2 = [];
+
+            for (var _col2 = 0; _col2 < _len; _col2++) {
+              _fillData2.push(selectionData[_row3][_col2]);
+            }
+
+            var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength);
+
+            for (var _col3 = 0; _col3 < _dragLength; _col3++) {
+              fillData[_row3][_col3] = _preFillData2[_col3];
+            }
+          }
+        } // TODO????
+
 
         if (['up', 'left'].indexOf(directionOfDrag) > -1) {
           fillData = [];
-          var dragLength = null;
+          var _dragLength2 = null;
           var fillOffset = null;
 
           if (directionOfDrag === 'up') {
-            dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
-            fillOffset = dragLength % selectionData.length;
+            _dragLength2 = endOfDragCoords.row - startOfDragCoords.row + 1;
+            fillOffset = _dragLength2 % selectionData.length;
 
-            for (var i = 0; i < dragLength; i++) {
-              fillData.push(selectionData[(i + (selectionData.length - fillOffset)) % selectionData.length]);
+            for (var _i = 0; _i < _dragLength2; _i++) {
+              fillData.push(selectionData[(_i + (selectionData.length - fillOffset)) % selectionData.length]);
             }
           } else {
-            dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
-            fillOffset = dragLength % selectionData[0].length;
+            _dragLength2 = endOfDragCoords.col - startOfDragCoords.col + 1;
+            fillOffset = _dragLength2 % selectionData[0].length;
 
-            for (var _i = 0; _i < selectionData.length; _i++) {
+            for (var _i2 = 0; _i2 < selectionData.length; _i2++) {
               fillData.push([]);
 
-              for (var j = 0; j < dragLength; j++) {
-                fillData[_i].push(selectionData[_i][(j + (selectionData[_i].length - fillOffset)) % selectionData[_i].length]);
+              for (var j = 0; j < _dragLength2; j++) {
+                fillData[_i2].push(selectionData[_i2][(j + (selectionData[_i2].length - fillOffset)) % selectionData[_i2].length]);
               }
             }
           }
         }
 
-        this.hot.populateFromArray(startOfDragCoords.row, startOfDragCoords.col, fillData, endOfDragCoords.row, endOfDragCoords.col, "".concat(this.pluginName, ".fill"), null, directionOfDrag, deltas);
+        this.hot.populateFromArray(startOfDragCoords.row, startOfDragCoords.col, fillData, endOfDragCoords.row, endOfDragCoords.col, "".concat(this.pluginName, ".fill"), null, directionOfDrag, deltas // only important if cell value is numeric
+        );
         this.setSelection(cornersOfSelectionAndDragAreas);
       } else {
         // reset to avoid some range bug
@@ -44169,6 +44308,20 @@ function (_BasePlugin) {
       }
 
       return true;
+    }
+    /**
+     *
+     * @param {Array<any>} data
+     * @param {number} targetCount
+     * @private
+     * @return {Array<any>} filled line data
+     */
+
+  }, {
+    key: "_fillSingleLine",
+    value: function _fillSingleLine(data, targetCount) {
+      if (!this.fillFunc) return data;
+      return this.fillFunc(data, targetCount);
     }
     /**
      * Reduces the selection area if the handle was dragged outside of the table or on headers.
@@ -51918,6 +52071,28 @@ function (_BasePlugin) {
      */
 
     _this.rowsLimit = ROWS_LIMIT;
+    /**
+     * when pasting text data (normally from spreadsheets) there are two types of separators
+     * row separators, which are new line characters (when we read a new line, we start a new row)
+     * column separators, which are tabs (when we read a column, we start a new column)
+     *
+     * this way we can paste multiple cells from text
+     * despite the options we always process the text (if we got text from clipboard) with sheet.js and get cells
+     * the options only re-introduce the not ignored separators
+     *
+     * `"normal"`: when pasting text data, we respect row and column separators (new line characters and tabs, respectively)
+     * `"onlyKeepColumnSeparators"`: when pasting text data, we only keep columns (ignore row separators)
+     * `"onlyKeepRowSeparators"`: when pasting text data, we only keep rows (ignore column separators)
+     * `"ignoreAllSeparators"`: always paste the content into a single cell (keep all separators)
+     *
+     * NOTE that we still use the multi cell logic and only convert the cells back with join (so Sheet js parse is applied, e.g. convert double quotes to single quotes, etc).
+     * @type {"normal" | "onlyKeepRowSeparators" | "onlyKeepColumnSeparators" | "ignoreAllSeparators"}
+     */
+
+    _this.pasteSeparatorMode = 'normal'; // these are only used for combining the cells again
+
+    _this.pasteRowJoinSeparator = '\n';
+    _this.pasteColumnJoinSeparator = '\t';
     privatePool.set(_assertThisInitialized(_assertThisInitialized(_this)), {
       isTriggeredByCopy: false,
       isTriggeredByCut: false,
@@ -51960,6 +52135,7 @@ function (_BasePlugin) {
         this.pasteMode = settings.copyPaste.pasteMode || this.pasteMode;
         this.rowsLimit = settings.copyPaste.rowsLimit || this.rowsLimit;
         this.columnsLimit = settings.copyPaste.columnsLimit || this.columnsLimit;
+        this.pasteIntoSingleCell = settings.copyPaste.pasteIntoSingleCell || this.pasteIntoSingleCell;
       }
 
       this.addHook('afterContextMenuDefaultOptions', function (options) {
@@ -52358,6 +52534,87 @@ function (_BasePlugin) {
 
       if (inputArray.length === 0) {
         return;
+      }
+
+      var colCount = inputArray[0].length;
+
+      switch (this.pasteSeparatorMode) {
+        case 'onlyKeepColumnSeparators':
+          {
+            /*
+              a | b | c           a | b | c
+              --|---|--     --->  d | e | f
+              d | e | f
+             */
+            var _tmpColsArray = [];
+
+            for (var colIndex = 0; colIndex < colCount; colIndex++) {
+              _tmpColsArray[colIndex] = '';
+
+              for (var rowIndex = 0; rowIndex < inputArray.length; rowIndex++) {
+                // eslint-disable-next-line prefer-template
+                _tmpColsArray[colIndex] += inputArray[rowIndex][colIndex] + (rowIndex !== inputArray.length - 1 ? this.pasteRowJoinSeparator : '');
+              }
+            }
+
+            inputArray = [_tmpColsArray];
+            break;
+          }
+
+        case 'onlyKeepRowSeparators':
+          {
+            /*
+              a | b | c           a \t b \t c
+              --|---|--     --->  ---------
+              d | e | f           d \t e \t f
+             */
+            var _tmpRowsArray = [];
+
+            for (var _rowIndex = 0; _rowIndex < inputArray.length; _rowIndex++) {
+              _tmpRowsArray.push(['']);
+
+              for (var _colIndex = 0; _colIndex < colCount; _colIndex++) {
+                // add back the col separator for the single cell
+                // eslint-disable-next-line prefer-template
+                _tmpRowsArray[_rowIndex][0] += inputArray[_rowIndex][_colIndex] + (_colIndex !== colCount - 1 ? this.pasteColumnJoinSeparator : '');
+              }
+            }
+
+            inputArray = _tmpRowsArray;
+            break;
+          }
+
+        case 'ignoreAllSeparators':
+          {
+            /*
+              a | b | c           a \t b \t c \n
+              --|---|--     --->  d \t e \t f
+              d | e | f
+             */
+            var cellValue = '';
+
+            for (var _rowIndex2 = 0; _rowIndex2 < inputArray.length; _rowIndex2++) {
+              for (var _colIndex2 = 0; _colIndex2 < colCount; _colIndex2++) {
+                // add back the col separator for the single cell
+                // eslint-disable-next-line prefer-template
+                cellValue += inputArray[_rowIndex2][_colIndex2] + (_colIndex2 !== colCount - 1 ? this.pasteColumnJoinSeparator : '');
+              } // add back the row separator for the single cell
+
+
+              if (_rowIndex2 !== inputArray.length - 1) {
+                cellValue += this.pasteRowJoinSeparator;
+              }
+            }
+
+            inputArray = [[cellValue]];
+            break;
+          }
+
+        case 'normal':
+        default:
+          {
+            break;
+          }
       }
 
       if (this.hot.runHooks('beforePaste', inputArray, this.copyableRanges) === false) {
@@ -56177,6 +56434,7 @@ function (_BasePlugin) {
     _this.dblclick = 0;
     _this.autoresizeTimeout = null;
     _this.manualColumnWidths = [];
+    _this.onBeforeColumnResizeBound = _this.onBeforeColumnResize.bind(_assertThisInitialized(_assertThisInitialized(_this)));
     (0, _element.addClass)(_this.handle, 'manualColumnResizer');
     (0, _element.addClass)(_this.guide, 'manualColumnResizerGuide');
     return _this;
@@ -56215,10 +56473,11 @@ function (_BasePlugin) {
       });
       this.addHook('beforeStretchingColumnWidth', function (stretchedWidth, column) {
         return _this2.onBeforeStretchingColumnWidth(stretchedWidth, column);
-      });
-      this.addHook('beforeColumnResize', function (currentColumn, newSize, isDoubleClick) {
-        return _this2.onBeforeColumnResize(currentColumn, newSize, isDoubleClick);
-      });
+      }); // we need a func reference because hook handler works with indexOf(callback) -> use references
+      // when we enable the plugin and add the hook it also checks for references and re-uses hooks (to keep order)
+      // this.addHook('beforeColumnResize', (currentColumn, newSize, isDoubleClick) => this.onBeforeColumnResize(currentColumn, newSize, isDoubleClick));
+
+      this.addHook('beforeColumnResize', this.onBeforeColumnResizeBound);
 
       if (typeof loadedManualColumnWidths !== 'undefined') {
         this.manualColumnWidths = loadedManualColumnWidths;
@@ -56671,7 +56930,9 @@ function (_BasePlugin) {
   }, {
     key: "setManualSize",
     value: function setManualSize(column, width) {
-      var newWidth = Math.max(width, 20);
+      // no max, as we want to use this also for hiding columns
+      // const newWidth = Math.max(width, 20);
+      var newWidth = width;
       /**
        *  We need to run col through modifyCol hook, in case the order of displayed columns is different than the order
        *  in data source. For instance, this order can be modified by manualColumnMove plugin.

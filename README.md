@@ -7,6 +7,10 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- (6.5.4)
+  - added option `setFillFunction` to `autoFill` plugin
+  - allows to specify how to fill the data (custom function)
+
 - (6.5.3)
   - added functions to hot instance: `isListeningPaused(): bool`, `setListeningPaused(bool)`
     - can be used to pause listening for `keyDown` events

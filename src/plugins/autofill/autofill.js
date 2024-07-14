@@ -183,54 +183,59 @@ class Autofill extends BasePlugin {
 
       const isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
 
-      if (isFillColumn) {
-        const dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
-        // fill columns (vertical)
-        const len = selectionData.length;
-        const numColumns = selectionData[0].length;
-        // every column data as an array
+      if (this.fillFunc) {
+        // if not custom fill, just use the selection data
+        // without custom fill, we don't want to modify fillData or selectionData (else populateFromArray doesn't work)
 
-        while (dragLength > fillData.length) {
-          fillData.push(Array(numColumns).fill(''));
-        }
+        if (isFillColumn) {
+          const dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
+          // fill columns (vertical)
+          const len = selectionData.length;
+          const numColumns = selectionData[0].length;
+          // every column data as an array
 
-        for (let _col = 0; _col < numColumns; _col++) {
-          let _fillData = [];
-          for (let _row = 0; _row < len; _row++) {
-            _fillData.push(selectionData[_row][_col]);
+          while (dragLength > fillData.length) {
+            fillData.push(Array(numColumns).fill(''));
           }
 
-          const _preFillData = this._fillSingleLine(_fillData, dragLength);
+          for (let _col = 0; _col < numColumns; _col++) {
+            const _fillData = [];
+            for (let _row = 0; _row < len; _row++) {
+              _fillData.push(selectionData[_row][_col]);
+            }
 
-          for (let _row = 0; _row < dragLength; _row++) {
-            fillData[_row][_col] = _preFillData[_row];
-          }
-        }
+            const _preFillData = this._fillSingleLine(_fillData, dragLength);
 
-      } else {
-        // fill rows (horizontal)
-        const dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
-        const len = selectionData[0].length;
-        const numRows = selectionData.length;
-        // every row data as an array
-
-        if (dragLength > len) {
-          for (let i = 0; i < numRows; i++) {
-            fillData[i].push(...Array(dragLength - len).fill(''));
-          }
-        }
-
-        for (let _row = 0; _row < numRows; _row++) {
-          let _fillData = [];
-
-          for (let _col = 0; _col < len; _col++) {
-            _fillData.push(selectionData[_row][_col]);
+            for (let _row = 0; _row < dragLength; _row++) {
+              fillData[_row][_col] = _preFillData[_row];
+            }
           }
 
-          const _preFillData = this._fillSingleLine(_fillData, dragLength);
+        } else {
+          // fill rows (horizontal)
+          const dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
+          const len = selectionData[0].length;
+          const numRows = selectionData.length;
+          // every row data as an array
 
-          for (let _col = 0; _col < dragLength; _col++) {
-            fillData[_row][_col] = _preFillData[_col];
+          if (dragLength > len) {
+            for (let i = 0; i < numRows; i++) {
+              fillData[i].push(...Array(dragLength - len).fill(''));
+            }
+          }
+
+          for (let _row = 0; _row < numRows; _row++) {
+            const _fillData = [];
+
+            for (let _col = 0; _col < len; _col++) {
+              _fillData.push(selectionData[_row][_col]);
+            }
+
+            const _preFillData = this._fillSingleLine(_fillData, dragLength);
+
+            for (let _col = 0; _col < dragLength; _col++) {
+              fillData[_row][_col] = _preFillData[_col];
+            }
           }
         }
       }

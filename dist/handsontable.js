@@ -23,8 +23,8 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
- * Version: 6.5.3
- * Release date: 19/12/2018 (built at 14/07/2024 19:42:38)
+ * Version: 6.5.4
+ * Release date: 19/12/2018 (built at 14/07/2024 19:56:06)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -29763,9 +29763,9 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "14/07/2024 19:42:38";
+Handsontable.buildDate = "14/07/2024 19:56:06";
 Handsontable.packageName = "handsontable";
-Handsontable.version = "6.5.3";
+Handsontable.version = "6.5.4";
 var baseVersion = "";
 
 if (baseVersion) {
@@ -44020,8 +44020,6 @@ var INTERVAL_FOR_ADDING_ROW = 200;
  * @plugin Autofill
  */
 
-/* eslint-disable */
-
 var Autofill =
 /*#__PURE__*/
 function (_BasePlugin) {
@@ -44051,7 +44049,7 @@ function (_BasePlugin) {
     _this.addingStarted = false;
     /**
      * the function used to fill data
-     * @type {null | (data: string[], requestedCount: number) => string[]}
+     * @type {null | (data: string[], targetCount: number) => string[]}
      */
 
     _this.fillFunc = null;
@@ -44218,59 +44216,62 @@ function (_BasePlugin) {
         var fillData = selectionData;
         var isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
 
-        if (isFillColumn) {
-          debugger;
-          var dragLength = endOfDragCoords.row - startOfDragCoords.row + 1; // fill columns (vertical)
+        if (this.fillFunc) {
+          // if not custom fill, just use the selection data
+          // without custom fill, we don't want to modify fillData or selectionData (else populateFromArray doesn't work)
+          if (isFillColumn) {
+            var dragLength = endOfDragCoords.row - startOfDragCoords.row + 1; // fill columns (vertical)
 
-          var len = selectionData.length;
-          var numColumns = selectionData[0].length; // every column data as an array
+            var len = selectionData.length;
+            var numColumns = selectionData[0].length; // every column data as an array
 
-          while (dragLength > fillData.length) {
-            fillData.push(Array(numColumns).fill(''));
+            while (dragLength > fillData.length) {
+              fillData.push(Array(numColumns).fill(''));
+            }
+
+            for (var _col = 0; _col < numColumns; _col++) {
+              var _fillData = [];
+
+              for (var _row = 0; _row < len; _row++) {
+                _fillData.push(selectionData[_row][_col]);
+              }
+
+              var _preFillData = this._fillSingleLine(_fillData, dragLength);
+
+              for (var _row2 = 0; _row2 < dragLength; _row2++) {
+                fillData[_row2][_col] = _preFillData[_row2];
+              }
+            }
+          } else {
+            // fill rows (horizontal)
+            var _dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
+
+            var _len = selectionData[0].length;
+            var numRows = selectionData.length; // every row data as an array
+
+            if (_dragLength > _len) {
+              for (var i = 0; i < numRows; i++) {
+                var _fillData$i;
+
+                (_fillData$i = fillData[i]).push.apply(_fillData$i, _toConsumableArray(Array(_dragLength - _len).fill('')));
+              }
+            }
+
+            for (var _row3 = 0; _row3 < numRows; _row3++) {
+              var _fillData2 = [];
+
+              for (var _col2 = 0; _col2 < _len; _col2++) {
+                _fillData2.push(selectionData[_row3][_col2]);
+              }
+
+              var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength);
+
+              for (var _col3 = 0; _col3 < _dragLength; _col3++) {
+                fillData[_row3][_col3] = _preFillData2[_col3];
+              }
+            }
           }
-
-          for (var _col = 0; _col < numColumns; _col++) {
-            var _fillData = [];
-
-            for (var _row = 0; _row < len; _row++) {
-              _fillData.push(selectionData[_row][_col]);
-            }
-
-            var _preFillData = this._fillSingleLine(_fillData, dragLength);
-
-            for (var _row2 = 0; _row2 < dragLength; _row2++) {
-              fillData[_row2][_col] = _preFillData[_row2];
-            }
-          }
-        } else {
-          // fill rows (horizontal)
-          var _dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
-
-          var _len = selectionData[0].length;
-          var numRows = selectionData.length; // every row data as an array
-
-          if (_dragLength > _len) {
-            for (var i = 0; i < numRows; i++) {
-              var _fillData$i;
-
-              (_fillData$i = fillData[i]).push.apply(_fillData$i, _toConsumableArray(Array(_dragLength - _len).fill('')));
-            }
-          }
-
-          for (var _row3 = 0; _row3 < numRows; _row3++) {
-            var _fillData2 = [];
-
-            for (var _col2 = 0; _col2 < _len; _col2++) {
-              _fillData2.push(selectionData[_row3][_col2]);
-            }
-
-            var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength);
-
-            for (var _col3 = 0; _col3 < _dragLength; _col3++) {
-              fillData[_row3][_col3] = _preFillData2[_col3];
-            }
-          }
-        } // TODO????
+        } // this seems to work because fillData = selectionData and we modified it in place
 
 
         if (['up', 'left'].indexOf(directionOfDrag) > -1) {

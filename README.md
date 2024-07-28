@@ -10,6 +10,8 @@ Below is a list of changes made to this repo (latest first)
 - (6.5.4)
   - added option `setFillFunction` to `autoFill` plugin
   - allows to specify how to fill the data (custom function)
+  - ensures that the correct number of fill data is returned
+    - else falls back to default behavior (copying)
 
 - (6.5.3)
   - added functions to hot instance: `isListeningPaused(): bool`, `setListeningPaused(bool)`

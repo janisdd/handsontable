@@ -44,6 +44,8 @@ class Autofill extends BasePlugin {
 
     /**
      * the function used to fill data
+     *
+     * if a function is set, the returned fill data must be of size targetCount!
      * @type {null | (data: string[], targetCount: number) => string[]}
      */
     this.fillFunc = null;
@@ -175,6 +177,8 @@ class Autofill extends BasePlugin {
 
     if (startOfDragCoords && startOfDragCoords.row > -1 && startOfDragCoords.col > -1) {
       const selectionData = this.getSelectionData();
+      // shallow copy does not work because array of arrays...
+      const selectionDataCopy = this.getSelectionData();
 
       this.hot.runHooks('beforeAutofill', startOfDragCoords, endOfDragCoords, selectionData);
 
@@ -182,6 +186,7 @@ class Autofill extends BasePlugin {
       let fillData = selectionData;
 
       const isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
+      let autoFillFailed = false;
 
       if (this.fillFunc) {
         // if not custom fill, just use the selection data
@@ -206,8 +211,12 @@ class Autofill extends BasePlugin {
 
             const _preFillData = this._fillSingleLine(_fillData, dragLength);
 
-            for (let _row = 0; _row < dragLength; _row++) {
-              fillData[_row][_col] = _preFillData[_row];
+            if (_preFillData) {
+              for (let _row = 0; _row < dragLength; _row++) {
+                fillData[_row][_col] = _preFillData[_row];
+              }
+            } else {
+              autoFillFailed = true;
             }
           }
 
@@ -233,11 +242,20 @@ class Autofill extends BasePlugin {
 
             const _preFillData = this._fillSingleLine(_fillData, dragLength);
 
-            for (let _col = 0; _col < dragLength; _col++) {
-              fillData[_row][_col] = _preFillData[_col];
+            if (_preFillData) {
+              for (let _col = 0; _col < dragLength; _col++) {
+                fillData[_row][_col] = _preFillData[_col];
+              }
+            } else {
+              autoFillFailed = true;
             }
           }
         }
+      }
+
+      if (autoFillFailed) {
+        // do normal fill (copy)
+        fillData = selectionDataCopy;
       }
 
       // this seems to work because fillData = selectionData and we modified it in place
@@ -300,7 +318,13 @@ class Autofill extends BasePlugin {
   _fillSingleLine(data, targetCount) {
     if (!this.fillFunc) return data;
 
-    return this.fillFunc(data, targetCount);
+    const fillData = this.fillFunc(data, targetCount);
+
+    if (!fillData || !Array.isArray(fillData) || fillData.length !== targetCount) {
+      return null;
+    }
+
+    return fillData;
   }
 
   /**

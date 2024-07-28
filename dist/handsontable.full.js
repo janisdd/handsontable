@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.5.4
- * Release date: 19/12/2018 (built at 14/07/2024 19:56:06)
+ * Release date: 19/12/2018 (built at 28/07/2024 19:06:52)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -35799,7 +35799,7 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "14/07/2024 19:56:06";
+Handsontable.buildDate = "28/07/2024 19:06:52";
 Handsontable.packageName = "handsontable";
 Handsontable.version = "6.5.4";
 var baseVersion = "";
@@ -56320,6 +56320,8 @@ function (_BasePlugin) {
     _this.addingStarted = false;
     /**
      * the function used to fill data
+     *
+     * if a function is set, the returned fill data must be of size targetCount!
      * @type {null | (data: string[], targetCount: number) => string[]}
      */
 
@@ -56481,11 +56483,14 @@ function (_BasePlugin) {
           endOfDragCoords = _getDragDirectionAndR.endOfDragCoords;
 
       if (startOfDragCoords && startOfDragCoords.row > -1 && startOfDragCoords.col > -1) {
-        var selectionData = this.getSelectionData();
+        var selectionData = this.getSelectionData(); // shallow copy does not work because array of arrays...
+
+        var selectionDataCopy = this.getSelectionData();
         this.hot.runHooks('beforeAutofill', startOfDragCoords, endOfDragCoords, selectionData);
         var deltas = (0, _utils.getDeltas)(startOfDragCoords, endOfDragCoords, selectionData, directionOfDrag);
         var fillData = selectionData;
         var isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
+        var autoFillFailed = false;
 
         if (this.fillFunc) {
           // if not custom fill, just use the selection data
@@ -56509,8 +56514,12 @@ function (_BasePlugin) {
 
               var _preFillData = this._fillSingleLine(_fillData, dragLength);
 
-              for (var _row2 = 0; _row2 < dragLength; _row2++) {
-                fillData[_row2][_col] = _preFillData[_row2];
+              if (_preFillData) {
+                for (var _row2 = 0; _row2 < dragLength; _row2++) {
+                  fillData[_row2][_col] = _preFillData[_row2];
+                }
+              } else {
+                autoFillFailed = true;
               }
             }
           } else {
@@ -56537,11 +56546,20 @@ function (_BasePlugin) {
 
               var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength);
 
-              for (var _col3 = 0; _col3 < _dragLength; _col3++) {
-                fillData[_row3][_col3] = _preFillData2[_col3];
+              if (_preFillData2) {
+                for (var _col3 = 0; _col3 < _dragLength; _col3++) {
+                  fillData[_row3][_col3] = _preFillData2[_col3];
+                }
+              } else {
+                autoFillFailed = true;
               }
             }
           }
+        }
+
+        if (autoFillFailed) {
+          // do normal fill (copy)
+          fillData = selectionDataCopy;
         } // this seems to work because fillData = selectionData and we modified it in place
 
 
@@ -56593,7 +56611,13 @@ function (_BasePlugin) {
     key: "_fillSingleLine",
     value: function _fillSingleLine(data, targetCount) {
       if (!this.fillFunc) return data;
-      return this.fillFunc(data, targetCount);
+      var fillData = this.fillFunc(data, targetCount);
+
+      if (!fillData || !Array.isArray(fillData) || fillData.length !== targetCount) {
+        return null;
+      }
+
+      return fillData;
     }
     /**
      * Reduces the selection area if the handle was dragged outside of the table or on headers.

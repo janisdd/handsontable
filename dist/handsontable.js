@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.5.4
- * Release date: 19/12/2018 (built at 28/07/2024 19:06:52)
+ * Release date: 19/12/2018 (built at 18/08/2024 18:48:25)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -29763,7 +29763,7 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "28/07/2024 19:06:52";
+Handsontable.buildDate = "18/08/2024 18:48:25";
 Handsontable.packageName = "handsontable";
 Handsontable.version = "6.5.4";
 var baseVersion = "";
@@ -44051,7 +44051,7 @@ function (_BasePlugin) {
      * the function used to fill data
      *
      * if a function is set, the returned fill data must be of size targetCount!
-     * @type {null | (data: string[], targetCount: number) => string[]}
+     * @type {null | (data: string[], targetCount: number, isNormalDirection: bool) => string[]}
      */
 
     _this.fillFunc = null;
@@ -44219,7 +44219,11 @@ function (_BasePlugin) {
         var deltas = (0, _utils.getDeltas)(startOfDragCoords, endOfDragCoords, selectionData, directionOfDrag);
         var fillData = selectionData;
         var isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
-        var autoFillFailed = false;
+        var autoFillFailed = false; // normal is top to bottom or left to right
+        // however, the user can also drag to top or to left (not normal), this is important for interpolation
+        // for copy only, this can be ignored!
+
+        var isNormalDirection = directionOfDrag === 'down' || directionOfDrag === 'right';
 
         if (this.fillFunc) {
           // if not custom fill, just use the selection data
@@ -44241,7 +44245,7 @@ function (_BasePlugin) {
                 _fillData.push(selectionData[_row][_col]);
               }
 
-              var _preFillData = this._fillSingleLine(_fillData, dragLength);
+              var _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
 
               if (_preFillData) {
                 for (var _row2 = 0; _row2 < dragLength; _row2++) {
@@ -44273,7 +44277,7 @@ function (_BasePlugin) {
                 _fillData2.push(selectionData[_row3][_col2]);
               }
 
-              var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength);
+              var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength, isNormalDirection);
 
               if (_preFillData2) {
                 for (var _col3 = 0; _col3 < _dragLength; _col3++) {
@@ -44332,15 +44336,18 @@ function (_BasePlugin) {
      *
      * @param {Array<any>} data
      * @param {number} targetCount
+     * @param {boolean} isNormalDirection normal is top to bottom or left to right
+     *   however, the user can also drag to top or to left (not normal), this is important for interpolation
+     *   for copy only, this can be ignored!
      * @private
      * @return {Array<any>} filled line data
      */
 
   }, {
     key: "_fillSingleLine",
-    value: function _fillSingleLine(data, targetCount) {
+    value: function _fillSingleLine(data, targetCount, isNormalDirection) {
       if (!this.fillFunc) return data;
-      var fillData = this.fillFunc(data, targetCount);
+      var fillData = this.fillFunc(data, targetCount, isNormalDirection);
 
       if (!fillData || !Array.isArray(fillData) || fillData.length !== targetCount) {
         return null;

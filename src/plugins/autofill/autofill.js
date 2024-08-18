@@ -46,7 +46,7 @@ class Autofill extends BasePlugin {
      * the function used to fill data
      *
      * if a function is set, the returned fill data must be of size targetCount!
-     * @type {null | (data: string[], targetCount: number) => string[]}
+     * @type {null | (data: string[], targetCount: number, isNormalDirection: bool) => string[]}
      */
     this.fillFunc = null;
     /**
@@ -187,6 +187,10 @@ class Autofill extends BasePlugin {
 
       const isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
       let autoFillFailed = false;
+      // normal is top to bottom or left to right
+      // however, the user can also drag to top or to left (not normal), this is important for interpolation
+      // for copy only, this can be ignored!
+      const isNormalDirection = directionOfDrag === 'down' || directionOfDrag === 'right';
 
       if (this.fillFunc) {
         // if not custom fill, just use the selection data
@@ -209,7 +213,7 @@ class Autofill extends BasePlugin {
               _fillData.push(selectionData[_row][_col]);
             }
 
-            const _preFillData = this._fillSingleLine(_fillData, dragLength);
+            const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
 
             if (_preFillData) {
               for (let _row = 0; _row < dragLength; _row++) {
@@ -240,7 +244,7 @@ class Autofill extends BasePlugin {
               _fillData.push(selectionData[_row][_col]);
             }
 
-            const _preFillData = this._fillSingleLine(_fillData, dragLength);
+            const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
 
             if (_preFillData) {
               for (let _col = 0; _col < dragLength; _col++) {
@@ -312,13 +316,16 @@ class Autofill extends BasePlugin {
    *
    * @param {Array<any>} data
    * @param {number} targetCount
+   * @param {boolean} isNormalDirection normal is top to bottom or left to right
+   *   however, the user can also drag to top or to left (not normal), this is important for interpolation
+   *   for copy only, this can be ignored!
    * @private
    * @return {Array<any>} filled line data
    */
-  _fillSingleLine(data, targetCount) {
+  _fillSingleLine(data, targetCount, isNormalDirection) {
     if (!this.fillFunc) return data;
 
-    const fillData = this.fillFunc(data, targetCount);
+    const fillData = this.fillFunc(data, targetCount, isNormalDirection);
 
     if (!fillData || !Array.isArray(fillData) || fillData.length !== targetCount) {
       return null;

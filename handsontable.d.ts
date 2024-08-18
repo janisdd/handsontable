@@ -629,7 +629,7 @@ declare namespace Handsontable {
       samplesGenerator: SamplesGenerator;
       widths: any[];
 
-      ignoreCellWidthFunc: null | (value: string) => boolean;
+      ignoreCellWidthFunc: null | ((value: string) => boolean);
 
       calculateAllColumnsWidth(rowRange?: number | object): void;
       calculateColumnsWidth(colRange?: number | object, rowRange?: number | object, force?: boolean): void;
@@ -673,7 +673,7 @@ declare namespace Handsontable {
       mouseDownOnCellCorner: boolean;
       mouseDragOutside: boolean;
       //func can return null in case of any error, then the default behavior is used
-      setFillFunction: (func: null | ((data: string[], targetCount: number) => (string[] | null))) => void;
+      setFillFunction: (func: null | ((data: string[], targetCount: number, isNormalDirection: boolean) => (string[] | null))) => void;
     }
 
     interface BindRowsWithHeaders extends Base {

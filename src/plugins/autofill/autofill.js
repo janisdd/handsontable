@@ -192,12 +192,14 @@ class Autofill extends BasePlugin {
       // for copy only, this can be ignored!
       const isNormalDirection = directionOfDrag === 'down' || directionOfDrag === 'right';
 
+      let dragLength = 0;
+
       if (this.fillFunc) {
         // if not custom fill, just use the selection data
         // without custom fill, we don't want to modify fillData or selectionData (else populateFromArray doesn't work)
 
         if (isFillColumn) {
-          const dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
+          dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
           // fill columns (vertical)
           const len = selectionData.length;
           const numColumns = selectionData[0].length;
@@ -216,9 +218,20 @@ class Autofill extends BasePlugin {
             const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
 
             if (_preFillData) {
+
+              if (_preFillData.length === dragLength) {
+
+                if (fillData.length > dragLength) {
+                  // remove entries that are not needed from the ending
+                  fillData.splice(dragLength);
+                }
+              }
+
+              // auto fill data is less than we selected
               for (let _row = 0; _row < dragLength; _row++) {
                 fillData[_row][_col] = _preFillData[_row];
               }
+
             } else {
               autoFillFailed = true;
             }
@@ -226,7 +239,7 @@ class Autofill extends BasePlugin {
 
         } else {
           // fill rows (horizontal)
-          const dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
+          dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
           const len = selectionData[0].length;
           const numRows = selectionData.length;
           // every row data as an array
@@ -247,9 +260,17 @@ class Autofill extends BasePlugin {
             const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
 
             if (_preFillData) {
-              for (let _col = 0; _col < dragLength; _col++) {
-                fillData[_row][_col] = _preFillData[_col];
+
+              if (_preFillData.length === dragLength) {
+                // just use fill data
+                fillData[_row] = _preFillData;
+              } else {
+                // auto fill data is less than we selected
+                for (let _col = 0; _col < dragLength; _col++) {
+                  fillData[_row][_col] = _preFillData[_col];
+                }
               }
+
             } else {
               autoFillFailed = true;
             }
@@ -265,12 +286,9 @@ class Autofill extends BasePlugin {
       // this seems to work because fillData = selectionData and we modified it in place
       if (['up', 'left'].indexOf(directionOfDrag) > -1) {
         fillData = [];
-
-        let dragLength = null;
         let fillOffset = null;
 
         if (directionOfDrag === 'up') {
-          dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
           fillOffset = dragLength % selectionData.length;
 
           for (let i = 0; i < dragLength; i++) {
@@ -278,7 +296,6 @@ class Autofill extends BasePlugin {
           }
 
         } else {
-          dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
           fillOffset = dragLength % selectionData[0].length;
 
           for (let i = 0; i < selectionData.length; i++) {

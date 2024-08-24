@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.5.4
- * Release date: 19/12/2018 (built at 19/08/2024 12:47:57)
+ * Release date: 19/12/2018 (built at 24/08/2024 20:04:28)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -29763,7 +29763,7 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "19/08/2024 12:47:57";
+Handsontable.buildDate = "24/08/2024 20:04:28";
 Handsontable.packageName = "handsontable";
 Handsontable.version = "6.5.4";
 var baseVersion = "";
@@ -44307,6 +44307,7 @@ function (_BasePlugin) {
         if (autoFillFailed) {
           // do normal fill (copy)
           fillData = selectionDataCopy;
+          selectionData = _toConsumableArray(selectionDataCopy);
         } // this seems to work because fillData = selectionData and we modified it in place
 
 

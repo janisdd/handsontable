@@ -24,7 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * Version: 6.5.4
- * Release date: 19/12/2018 (built at 28/07/2024 19:06:52)
+ * Release date: 19/12/2018 (built at 24/08/2024 20:04:28)
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -35799,7 +35799,7 @@ Handsontable.DefaultSettings = _defaultSettings.default;
 Handsontable.EventManager = _eventManager.default;
 Handsontable._getListenersCounter = _eventManager.getListenersCounter; // For MemoryLeak tests
 
-Handsontable.buildDate = "28/07/2024 19:06:52";
+Handsontable.buildDate = "24/08/2024 20:04:28";
 Handsontable.packageName = "handsontable";
 Handsontable.version = "6.5.4";
 var baseVersion = "";
@@ -56322,7 +56322,7 @@ function (_BasePlugin) {
      * the function used to fill data
      *
      * if a function is set, the returned fill data must be of size targetCount!
-     * @type {null | (data: string[], targetCount: number) => string[]}
+     * @type {null | (data: string[], targetCount: number, isNormalDirection: bool) => string[]}
      */
 
     _this.fillFunc = null;
@@ -56490,13 +56490,18 @@ function (_BasePlugin) {
         var deltas = (0, _utils.getDeltas)(startOfDragCoords, endOfDragCoords, selectionData, directionOfDrag);
         var fillData = selectionData;
         var isFillColumn = directionOfDrag === 'down' || directionOfDrag === 'up';
-        var autoFillFailed = false;
+        var autoFillFailed = false; // normal is top to bottom or left to right
+        // however, the user can also drag to top or to left (not normal), this is important for interpolation
+        // for copy only, this can be ignored!
+
+        var isNormalDirection = directionOfDrag === 'down' || directionOfDrag === 'right';
+        var dragLength = 0;
 
         if (this.fillFunc) {
           // if not custom fill, just use the selection data
           // without custom fill, we don't want to modify fillData or selectionData (else populateFromArray doesn't work)
           if (isFillColumn) {
-            var dragLength = endOfDragCoords.row - startOfDragCoords.row + 1; // fill columns (vertical)
+            dragLength = endOfDragCoords.row - startOfDragCoords.row + 1; // fill columns (vertical)
 
             var len = selectionData.length;
             var numColumns = selectionData[0].length; // every column data as an array
@@ -56512,9 +56517,17 @@ function (_BasePlugin) {
                 _fillData.push(selectionData[_row][_col]);
               }
 
-              var _preFillData = this._fillSingleLine(_fillData, dragLength);
+              var _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
 
               if (_preFillData) {
+                if (_preFillData.length === dragLength) {
+                  if (fillData.length > dragLength) {
+                    // remove entries that are not needed from the ending
+                    fillData.splice(dragLength);
+                  }
+                } // auto fill data is less than we selected
+
+
                 for (var _row2 = 0; _row2 < dragLength; _row2++) {
                   fillData[_row2][_col] = _preFillData[_row2];
                 }
@@ -56524,16 +56537,15 @@ function (_BasePlugin) {
             }
           } else {
             // fill rows (horizontal)
-            var _dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
-
+            dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
             var _len = selectionData[0].length;
             var numRows = selectionData.length; // every row data as an array
 
-            if (_dragLength > _len) {
+            if (dragLength > _len) {
               for (var i = 0; i < numRows; i++) {
                 var _fillData$i;
 
-                (_fillData$i = fillData[i]).push.apply(_fillData$i, _toConsumableArray(Array(_dragLength - _len).fill('')));
+                (_fillData$i = fillData[i]).push.apply(_fillData$i, _toConsumableArray(Array(dragLength - _len).fill('')));
               }
             }
 
@@ -56544,11 +56556,17 @@ function (_BasePlugin) {
                 _fillData2.push(selectionData[_row3][_col2]);
               }
 
-              var _preFillData2 = this._fillSingleLine(_fillData2, _dragLength);
+              var _preFillData2 = this._fillSingleLine(_fillData2, dragLength, isNormalDirection);
 
               if (_preFillData2) {
-                for (var _col3 = 0; _col3 < _dragLength; _col3++) {
-                  fillData[_row3][_col3] = _preFillData2[_col3];
+                if (_preFillData2.length === dragLength) {
+                  // just use fill data
+                  fillData[_row3] = _preFillData2;
+                } else {
+                  // auto fill data is less than we selected
+                  for (var _col3 = 0; _col3 < dragLength; _col3++) {
+                    fillData[_row3][_col3] = _preFillData2[_col3];
+                  }
                 }
               } else {
                 autoFillFailed = true;
@@ -56560,29 +56578,27 @@ function (_BasePlugin) {
         if (autoFillFailed) {
           // do normal fill (copy)
           fillData = selectionDataCopy;
+          selectionData = _toConsumableArray(selectionDataCopy);
         } // this seems to work because fillData = selectionData and we modified it in place
 
 
         if (['up', 'left'].indexOf(directionOfDrag) > -1) {
           fillData = [];
-          var _dragLength2 = null;
           var fillOffset = null;
 
           if (directionOfDrag === 'up') {
-            _dragLength2 = endOfDragCoords.row - startOfDragCoords.row + 1;
-            fillOffset = _dragLength2 % selectionData.length;
+            fillOffset = dragLength % selectionData.length;
 
-            for (var _i = 0; _i < _dragLength2; _i++) {
+            for (var _i = 0; _i < dragLength; _i++) {
               fillData.push(selectionData[(_i + (selectionData.length - fillOffset)) % selectionData.length]);
             }
           } else {
-            _dragLength2 = endOfDragCoords.col - startOfDragCoords.col + 1;
-            fillOffset = _dragLength2 % selectionData[0].length;
+            fillOffset = dragLength % selectionData[0].length;
 
             for (var _i2 = 0; _i2 < selectionData.length; _i2++) {
               fillData.push([]);
 
-              for (var j = 0; j < _dragLength2; j++) {
+              for (var j = 0; j < dragLength; j++) {
                 fillData[_i2].push(selectionData[_i2][(j + (selectionData[_i2].length - fillOffset)) % selectionData[_i2].length]);
               }
             }
@@ -56603,15 +56619,18 @@ function (_BasePlugin) {
      *
      * @param {Array<any>} data
      * @param {number} targetCount
+     * @param {boolean} isNormalDirection normal is top to bottom or left to right
+     *   however, the user can also drag to top or to left (not normal), this is important for interpolation
+     *   for copy only, this can be ignored!
      * @private
      * @return {Array<any>} filled line data
      */
 
   }, {
     key: "_fillSingleLine",
-    value: function _fillSingleLine(data, targetCount) {
+    value: function _fillSingleLine(data, targetCount, isNormalDirection) {
       if (!this.fillFunc) return data;
-      var fillData = this.fillFunc(data, targetCount);
+      var fillData = this.fillFunc(data, targetCount, isNormalDirection);
 
       if (!fillData || !Array.isArray(fillData) || fillData.length !== targetCount) {
         return null;

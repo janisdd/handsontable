@@ -176,7 +176,7 @@ class Autofill extends BasePlugin {
     const { directionOfDrag, startOfDragCoords, endOfDragCoords } = getDragDirectionAndRange(cornersOfSelectedCells, cornersOfSelectionAndDragAreas);
 
     if (startOfDragCoords && startOfDragCoords.row > -1 && startOfDragCoords.col > -1) {
-      const selectionData = this.getSelectionData();
+      let selectionData = this.getSelectionData();
       // shallow copy does not work because array of arrays...
       const selectionDataCopy = this.getSelectionData();
 
@@ -281,6 +281,7 @@ class Autofill extends BasePlugin {
       if (autoFillFailed) {
         // do normal fill (copy)
         fillData = selectionDataCopy;
+        selectionData = [...selectionDataCopy];
       }
 
       // this seems to work because fillData = selectionData and we modified it in place

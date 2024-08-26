@@ -46,7 +46,7 @@ class Autofill extends BasePlugin {
      * the function used to fill data
      *
      * if a function is set, the returned fill data must be of size targetCount!
-     * @type {null | (data: string[], targetCount: number, isNormalDirection: bool) => string[]}
+     * @type {null | (data: string[], targetCount: number, isNormalDirection: bool, mouseupEvent: MouseEvent) => string[]}
      */
     this.fillFunc = null;
     /**
@@ -156,12 +156,13 @@ class Autofill extends BasePlugin {
    * Try to apply fill values to the area in fill border, omitting the selection border.
    *
    * @private
+   * @param {MouseEvent} event `mouseup` event properties.
    * @returns {Boolean} reports if fill was applied.
    *
    * @fires Hooks#modifyAutofillRange
    * @fires Hooks#beforeAutofill
    */
-  fillIn() {
+  fillIn(event) {
     if (this.hot.selection.highlight.getFill().isEmpty()) {
       return false;
     }
@@ -215,7 +216,7 @@ class Autofill extends BasePlugin {
               _fillData.push(selectionData[_row][_col]);
             }
 
-            const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
+            const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection, event);
 
             if (_preFillData) {
 
@@ -257,7 +258,7 @@ class Autofill extends BasePlugin {
               _fillData.push(selectionData[_row][_col]);
             }
 
-            const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection);
+            const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection, event);
 
             if (_preFillData) {
 
@@ -340,10 +341,10 @@ class Autofill extends BasePlugin {
    * @private
    * @return {Array<any>} filled line data
    */
-  _fillSingleLine(data, targetCount, isNormalDirection) {
+  _fillSingleLine(data, targetCount, isNormalDirection, event) {
     if (!this.fillFunc) return data;
 
-    const fillData = this.fillFunc(data, targetCount, isNormalDirection);
+    const fillData = this.fillFunc(data, targetCount, isNormalDirection, event);
 
     if (!fillData || !Array.isArray(fillData) || fillData.length !== targetCount) {
       return null;
@@ -590,7 +591,7 @@ class Autofill extends BasePlugin {
    * @private
    */
   registerEvents() {
-    this.eventManager.addEventListener(document.documentElement, 'mouseup', () => this.onMouseUp());
+    this.eventManager.addEventListener(document.documentElement, 'mouseup', (event) => this.onMouseUp(event));
     this.eventManager.addEventListener(document.documentElement, 'mousemove', event => this.onMouseMove(event));
   }
 
@@ -636,11 +637,12 @@ class Autofill extends BasePlugin {
    * On mouse up listener.
    *
    * @private
+   * @param {MouseEvent} event `mouseup` event properties.
    */
-  onMouseUp() {
+  onMouseUp(event) {
     if (this.handleDraggedCells) {
       if (this.handleDraggedCells > 1) {
-        this.fillIn();
+        this.fillIn(event);
       }
 
       this.handleDraggedCells = 0;

@@ -202,8 +202,9 @@ class Autofill extends BasePlugin {
         if (isFillColumn) {
           dragLength = endOfDragCoords.row - startOfDragCoords.row + 1;
           // fill columns (vertical)
-          const len = selectionData.length;
-          const numColumns = selectionData[0].length;
+          // we need to use the copy here because fillData = selectionData and we mutate fillData
+          const len = selectionDataCopy.length;
+          const numColumns = selectionDataCopy[0].length;
           // every column data as an array
 
           while (dragLength > fillData.length) {
@@ -213,7 +214,7 @@ class Autofill extends BasePlugin {
           for (let _col = 0; _col < numColumns; _col++) {
             const _fillData = [];
             for (let _row = 0; _row < len; _row++) {
-              _fillData.push(selectionData[_row][_col]);
+              _fillData.push(selectionDataCopy[_row][_col]);
             }
 
             const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection, event);
@@ -241,8 +242,8 @@ class Autofill extends BasePlugin {
         } else {
           // fill rows (horizontal)
           dragLength = endOfDragCoords.col - startOfDragCoords.col + 1;
-          const len = selectionData[0].length;
-          const numRows = selectionData.length;
+          const len = selectionDataCopy[0].length;
+          const numRows = selectionDataCopy.length;
           // every row data as an array
 
           if (dragLength > len) {
@@ -255,7 +256,7 @@ class Autofill extends BasePlugin {
             const _fillData = [];
 
             for (let _col = 0; _col < len; _col++) {
-              _fillData.push(selectionData[_row][_col]);
+              _fillData.push(selectionDataCopy[_row][_col]);
             }
 
             const _preFillData = this._fillSingleLine(_fillData, dragLength, isNormalDirection, event);

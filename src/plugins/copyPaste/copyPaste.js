@@ -91,6 +91,14 @@ class CopyPaste extends BasePlugin {
     this.rowsLimit = ROWS_LIMIT;
 
     /**
+     * When set to `scrollToLastPastedCell`, scroll to the last pasted cell (this will select all pasted cells)
+     * When set to `scrollToFirstPastedCell`, scroll to the last first pasted cell (only select that cell)
+     * When set to `dontScroll`, don't scroll after the paste
+     * @type {'scrollToLastPastedCell' | 'scrollToFirstPastedCell' | 'dontScroll'}
+     */
+    this.pasteScrollBehavior = 'scrollToLastPastedCell';
+
+    /**
      * when pasting text data (normally from spreadsheets) there are two types of separators
      * row separators, which are new line characters (when we read a new line, we start a new row)
      * column separators, which are tabs (when we read a column, we start a new column)
@@ -105,7 +113,7 @@ class CopyPaste extends BasePlugin {
      * `"ignoreAllSeparators"`: always paste the content into a single cell (keep all separators)
      *
      * NOTE that we still use the multi cell logic and only convert the cells back with join (so Sheet js parse is applied, e.g. convert double quotes to single quotes, etc).
-     * @type {"normal" | "onlyKeepRowSeparators" | "onlyKeepColumnSeparators" | "ignoreAllSeparators"}
+     * @type {'normal' | 'onlyKeepRowSeparators' | 'onlyKeepColumnSeparators' | 'ignoreAllSeparators'}
      */
     this.pasteSeparatorMode = 'normal';
     // these are only used for combining the cells again
@@ -604,12 +612,47 @@ class CopyPaste extends BasePlugin {
 
     const [startRow, startColumn, endRow, endColumn] = this.populateValues(inputArray);
 
+    // this.hot.selectCell(
+    //   startRow,
+    //   startColumn,
+    //   this.pasteScrollBehavior === 'scrollToLastFirstPastedCell' ? Math.min(this.hot.countRows() - 1, endRow) : startRow,
+    //   this.pasteScrollBehavior === 'scrollToLastFirstPastedCell' ? Math.min(this.hot.countCols() - 1, endColumn) : startColumn,
+    // );
+
     this.hot.selectCell(
       startRow,
       startColumn,
       Math.min(this.hot.countRows() - 1, endRow),
       Math.min(this.hot.countCols() - 1, endColumn),
+      false
     );
+
+    switch (this.pasteScrollBehavior) {
+      case 'scrollToFirstPastedCell': {
+        this.hot.scrollViewportTo(
+          startRow,
+          startColumn,
+          false,
+          false
+        );
+        break;
+      }
+      case 'scrollToLastPastedCell': {
+        this.hot.scrollViewportTo(
+          Math.min(this.hot.countRows() - 1, endRow),
+          Math.min(this.hot.countCols() - 1, endColumn),
+          true,
+          true,
+        );
+        break;
+      }
+
+      case 'dontScroll': {
+        break;
+      }
+      default:
+        break;
+    }
 
     this.hot.runHooks('afterPaste', inputArray, this.copyableRanges);
   }

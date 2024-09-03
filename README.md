@@ -12,6 +12,11 @@ Below is a list of changes made to this repo (latest first)
   - allows to specify how to fill the data (custom function)
   - ensures that the correct number of fill data is returned
     - else falls back to default behavior (copying)
+  - added option `pasteScrollBehavior` to `copyPaste` plugin
+    - `scrollToLastPastedCell` (default) previous behavior: will scroll to the last pasted cell
+    - `scrollToFirstPastedCell`: will scroll to the first pasted cell
+    - `dontScroll`: do not scroll to the pasted cells
+    - note: pasted cells are still selected
 
 - (6.5.3)
   - added functions to hot instance: `isListeningPaused(): bool`, `setListeningPaused(bool)`

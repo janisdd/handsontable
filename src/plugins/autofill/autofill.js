@@ -106,7 +106,8 @@ class Autofill extends BasePlugin {
     this.registerEvents();
 
     this.addHook('afterOnCellCornerMouseDown', event => this.onAfterCellCornerMouseDown(event));
-    this.addHook('afterOnCellCornerDblClick', event => this.onCellCornerDblClick(event));
+    // this does not work with our custom fill function implementation and this does not seem useful?
+    // this.addHook('afterOnCellCornerDblClick', event => this.onCellCornerDblClick(event));
     this.addHook('beforeOnCellMouseOver', (event, coords) => this.onBeforeCellMouseOver(coords));
 
     super.enablePlugin();

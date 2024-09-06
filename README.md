@@ -17,6 +17,9 @@ Below is a list of changes made to this repo (latest first)
     - `scrollToFirstPastedCell`: will scroll to the first pasted cell
     - `dontScroll`: do not scroll to the pasted cells
     - note: pasted cells are still selected
+  - removed `onCellCornerDblClick` function from the `autoFill` plugin
+    - it used to fill in all other cells in the column if they were empty?
+    - does not work with our implementation of custom fill function
 
 - (6.5.3)
   - added functions to hot instance: `isListeningPaused(): bool`, `setListeningPaused(bool)`

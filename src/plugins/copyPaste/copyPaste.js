@@ -615,39 +615,46 @@ class CopyPaste extends BasePlugin {
     // this.hot.selectCell(
     //   startRow,
     //   startColumn,
-    //   this.pasteScrollBehavior === 'scrollToLastFirstPastedCell' ? Math.min(this.hot.countRows() - 1, endRow) : startRow,
-    //   this.pasteScrollBehavior === 'scrollToLastFirstPastedCell' ? Math.min(this.hot.countCols() - 1, endColumn) : startColumn,
+    //   Math.min(this.hot.countRows() - 1, endRow),
+    //   Math.min(this.hot.countCols() - 1, endColumn),
+    //   false
     // );
-
-    this.hot.selectCell(
-      startRow,
-      startColumn,
-      Math.min(this.hot.countRows() - 1, endRow),
-      Math.min(this.hot.countCols() - 1, endColumn),
-      false
-    );
 
     switch (this.pasteScrollBehavior) {
       case 'scrollToFirstPastedCell': {
-        this.hot.scrollViewportTo(
+        // somehow this does a better jop in keeping the col/row in the viewport than scrollViewportTo
+        this.hot.selectCell(
+          Math.min(this.hot.countRows() - 1, endRow),
+          Math.min(this.hot.countCols() - 1, endColumn),
           startRow,
           startColumn,
-          false,
-          false
         );
+        // this.hot.scrollViewportTo(
+        //   startRow,
+        //   startColumn,
+        //   false,
+        //   false
+        // );
         break;
       }
       case 'scrollToLastPastedCell': {
-        this.hot.scrollViewportTo(
+        this.hot.selectCell(
+          startRow,
+          startColumn,
           Math.min(this.hot.countRows() - 1, endRow),
           Math.min(this.hot.countCols() - 1, endColumn),
-          true,
-          true,
         );
         break;
       }
 
       case 'dontScroll': {
+        this.hot.selectCell(
+          startRow,
+          startColumn,
+          Math.min(this.hot.countRows() - 1, endRow),
+          Math.min(this.hot.countCols() - 1, endColumn),
+          false
+        );
         break;
       }
       default:

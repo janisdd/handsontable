@@ -74,9 +74,10 @@ class CopyPaste extends BasePlugin {
     this.copyableRanges = [];
     /**
      * Defines paste (<kbd>CTRL</kbd> + <kbd>V</kbd>) behavior.
-     * * Default value `"overwrite"` will paste clipboard value over current selection.
-     * * When set to `"shift_down"`, clipboard data will be pasted in place of current selection, while all selected cells are moved down.
-     * * When set to `"shift_right"`, clipboard data will be pasted in place of current selection, while all selected cells are moved right.
+     * Default value `"overwrite"` will paste clipboard value over current selection.
+     * When set to `overwriteExceptEmpty`, clipboard value will be pasted over current selection only for past data cells that are not empty
+     * When set to `"shift_down"`, clipboard data will be pasted in place of current selection, while all selected cells are moved down.
+     * When set to `"shift_right"`, clipboard data will be pasted in place of current selection, while all selected cells are moved right.
      *
      * @type {String}
      * @default 'overwrite'
@@ -391,6 +392,8 @@ class CopyPaste extends BasePlugin {
       return;
     }
 
+    let pasteMode = this.pasteMode;
+
     const newValuesMaxRow = inputArray.length - 1;
     const newValuesMaxColumn = inputArray[0].length - 1;
 
@@ -404,7 +407,19 @@ class CopyPaste extends BasePlugin {
       const newRow = [];
 
       for (let column = startColumn, valuesColumn = 0; column <= endColumn; column += 1) {
-        newRow.push(inputArray[valuesRow][valuesColumn]);
+
+        if (pasteMode === 'overwriteExceptEmpty') {
+          // selection seems to be visual indices and getDataAtCell also uses visible indices
+          const originalData = this.hot.getDataAtCell(row, column);
+          const pasteCellData = inputArray[valuesRow][valuesColumn];
+          if (this._isCellEmpty(pasteCellData)) {
+            newRow.push(originalData);
+          } else {
+            newRow.push(pasteCellData);
+          }
+        } else {
+          newRow.push(inputArray[valuesRow][valuesColumn]);
+        }
 
         valuesColumn = valuesColumn === newValuesMaxColumn ? 0 : valuesColumn += 1;
       }
@@ -414,9 +429,25 @@ class CopyPaste extends BasePlugin {
       valuesRow = valuesRow === newValuesMaxRow ? 0 : valuesRow += 1;
     }
 
-    this.hot.populateFromArray(startRow, startColumn, newValues, void 0, void 0, 'CopyPaste.paste', this.pasteMode);
+    // populateFromArray does not know this paste mode, so we only change the data of the paste
+    if (pasteMode === 'overwriteExceptEmpty') {
+      pasteMode = 'overwrite';
+    }
+
+    this.hot.populateFromArray(startRow, startColumn, newValues, void 0, void 0, 'CopyPaste.paste', pasteMode);
 
     return [startRow, startColumn, endRow, endColumn];
+  }
+
+  _isCellEmpty(cellData) {
+
+    if (cellData === '') return true;
+
+    if (typeof cellData === 'string') {
+      return cellData.trim() === '';
+    }
+
+    return cellData === null || cellData === void 0;
   }
 
   /**

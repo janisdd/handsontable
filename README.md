@@ -7,6 +7,10 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- (6.5.5)
+  - added option `overwriteExceptEmpty` to the `copyPaste` plugin
+    - it will only replace the cell value with the paste data if the paste data cell was not empty (empty means empty string or just whitespace, checked via `.trim`)
+    - this means existing cells will only be overwritten if we have paste data for this cell
 - (6.5.4)
   - added option `setFillFunction` to `autoFill` plugin
   - allows to specify how to fill the data (custom function)

@@ -35,6 +35,7 @@ class Menu {
       keepInViewport: true,
       standalone: false,
       minWidth: MIN_WIDTH,
+      subMenuOpenDelayInMs: 300, // default
     };
     this.eventManager = new EventManager(this);
     this.container = this.createContainer(this.options.name);
@@ -105,7 +106,8 @@ class Menu {
     this.container.removeAttribute('style');
     this.container.style.display = 'block';
 
-    const delayedOpenSubMenu = debounce(row => this.openSubMenu(row), 300);
+    const delay = this.options.subMenuOpenDelayInMs || 300;
+    const delayedOpenSubMenu = debounce(row => this.openSubMenu(row), delay);
     const minWidthOfMenu = this.options.minWidth || MIN_WIDTH;
 
     let filteredItems = arrayFilter(this.menuItems, item => isItemHidden(item, this.hot));
@@ -202,7 +204,8 @@ class Menu {
       parent: this,
       name: dataItem.name,
       className: this.options.className,
-      keepInViewport: true
+      keepInViewport: true,
+      subMenuOpenDelayInMs: this.options.subMenuOpenDelayInMs || 300
     });
     subMenu.setMenuItems(dataItem.submenu.items);
     subMenu.open();

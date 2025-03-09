@@ -7,6 +7,20 @@ This fork is specifically created for https://github.com/janisdd/vscode-edit-csv
 
 Below is a list of changes made to this repo (latest first)
 
+- (6.5.6)
+  - added option `subMenuOpenDelayInMs` to `hot.contextMenu` object
+    - default is 300ms
+    - usage:
+    ```js
+    let hotOptions = {
+      //...
+      contextMenu: {
+			  subMenuOpenDelayInMs: 100,
+			    items: {
+          }
+        }
+      }
+    ```
 - (6.5.5)
   - added option `overwriteExceptEmpty` to the `copyPaste` plugin
     - it will only replace the cell value with the paste data if the paste data cell was not empty (empty means empty string or just whitespace, checked via `.trim`)

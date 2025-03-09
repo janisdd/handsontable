@@ -161,7 +161,8 @@ class ContextMenu extends BasePlugin {
 
       this.menu = new Menu(this.hot, {
         className: 'htContextMenu',
-        keepInViewport: true
+        keepInViewport: true,
+        subMenuOpenDelayInMs: settings.subMenuOpenDelayInMs || 300
       });
       this.hot.runHooks('beforeContextMenuSetItems', menuItems);
 

@@ -87,6 +87,7 @@ declare namespace _Handsontable {
     setDataAtCell(changes: Array<[number, string | number, any]>, source?: string): void;
     setDataAtRowProp(row: number, prop: string, value: any, source?: string): void;
     setDataAtRowProp(changes: Array<[number, string | number, any]>, source?: string): void;
+    setListeningPaused(isPaused: boolean): void;
     spliceCol(col: number, index: number, amount: number, elements?: any): void;
     spliceRow(row: number, index: number, amount: number, elements?: any): void;
     toPhysicalColumn(column: number): number;
